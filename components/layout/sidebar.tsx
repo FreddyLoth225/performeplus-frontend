@@ -18,8 +18,9 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { RoleEquipe } from '@/lib/types'
 
@@ -80,16 +81,30 @@ const getNavigationItems = (role: RoleEquipe | undefined) => {
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
   const { user } = useAuthStore()
   const { currentTeam, currentMembership } = useTeamStore()
   const { logout } = useAuth()
+
+  // Éviter les problèmes d'hydratation
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const navigationItems = getNavigationItems(currentMembership?.role)
 
   const userInitials = user
     ? `${user.nom.charAt(0)}${user.prenoms.charAt(0)}`.toUpperCase()
     : '??'
+
+  if (!mounted) {
+    return (
+      <div className="w-64 h-screen bg-slate-900 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      </div>
+    )
+  }
 
   return (
     <div

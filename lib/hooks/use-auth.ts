@@ -3,17 +3,25 @@ import { useRouter } from 'next/navigation'
 import { authService, LoginCredentials, RegisterData } from '@/lib/api/auth.service'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { toast } from 'sonner'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export function useAuth() {
   const router = useRouter()
   const { setUser, logout: logoutStore, user } = useAuthStore()
+  const [hasToken, setHasToken] = useState(false)
+
+  // Vérifier le token côté client uniquement
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHasToken(!!localStorage.getItem('access_token'))
+    }
+  }, [])
 
   // Récupérer le profil utilisateur au chargement si token existe
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
     queryFn: () => authService.getCurrentUser(),
-    enabled: !!localStorage.getItem('access_token') && !user,
+    enabled: hasToken && !user,
     retry: false,
   })
 
@@ -25,19 +33,38 @@ export function useAuth() {
 
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => authService.login(credentials),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      console.log('📦 Données reçues:', data)
+      
       localStorage.setItem('access_token', data.access)
       localStorage.setItem('refresh_token', data.refresh)
-      setUser(data.user)
+      
+      // Si pas de user dans la réponse, le récupérer
+      if (!data.user) {
+        console.log('⚠️ User non présent, récupération...')
+        try {
+          const user = await authService.getCurrentUser()
+          console.log('✅ User récupéré:', user)
+          setUser(user)
+        } catch (error) {
+          console.error('❌ Erreur récupération user:', error)
+          toast.error('Erreur lors de la récupération du profil')
+          return
+        }
+      } else {
+        console.log('✅ User présent dans la réponse')
+        setUser(data.user)
+      }
+      
       toast.success('Connexion réussie !')
       
-      // Petit délai pour s'assurer que le store est mis à jour
       setTimeout(() => {
+        console.log('🔄 Redirection vers /dashboard')
         router.push('/dashboard')
-        router.refresh() // Force le rechargement du middleware
       }, 100)
     },
     onError: (error: any) => {
+      console.error('❌ Erreur login:', error)
       const message = error.response?.data?.detail || 
                      error.response?.data?.message ||
                      'Erreur de connexion'

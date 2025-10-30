@@ -1,12 +1,33 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useTeamStore } from '@/lib/store/team-store'
+import { useIndiceForme } from '@/lib/hooks/use-wellness'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Activity, Calendar, TrendingUp, AlertCircle } from 'lucide-react'
+import { Activity, Calendar, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export default function PlayerDashboard() {
-  const { currentTeam, currentMembership } = useTeamStore()
+  const router = useRouter()
+  const { currentTeam } = useTeamStore()
+  const { today, isLoadingToday } = useIndiceForme(currentTeam?.id)
+
+  const getScoreColor = (score?: number) => {
+    if (!score) return 'text-slate-400'
+    if (score < 15) return 'text-red-600'
+    if (score < 21) return 'text-orange-600'
+    return 'text-green-600'
+  }
+
+  const getScoreLabel = (score?: number) => {
+    if (!score) return 'Non saisi'
+    if (score < 12) return 'Très mauvais'
+    if (score < 15) return 'Mauvais'
+    if (score < 21) return 'Moyen'
+    if (score < 25) return 'Bon'
+    return 'Excellent'
+  }
 
   return (
     <div className="p-8 space-y-8">
@@ -20,7 +41,7 @@ export default function PlayerDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => router.push('/dashboard/my-data')}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
               Indice de Forme
@@ -28,10 +49,18 @@ export default function PlayerDashboard() {
             <Activity className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">--/28</div>
-            <p className="text-xs text-slate-600 mt-1">
-              Saisissez votre indice du jour
-            </p>
+            {isLoadingToday ? (
+              <div className="text-2xl font-bold text-slate-400">...</div>
+            ) : (
+              <>
+                <div className={cn('text-2xl font-bold', getScoreColor(today?.scorTotal))}>
+                  {today?.scorTotal ? `${today.scorTotal}/28` : '--/28'}
+                </div>
+                <p className={cn('text-xs mt-1', getScoreColor(today?.scorTotal))}>
+                  {getScoreLabel(today?.scorTotal)}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -84,15 +113,20 @@ export default function PlayerDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button className="h-24 flex flex-col gap-2" variant="outline">
+          <Button 
+            className="h-24 flex flex-col gap-2" 
+            variant="outline"
+            onClick={() => router.push('/dashboard/my-data')}
+          >
             <Activity className="h-6 w-6" />
             <span>Saisir Indice de Forme</span>
+            <ArrowRight className="h-4 w-4 absolute bottom-2 right-2 opacity-50" />
           </Button>
-          <Button className="h-24 flex flex-col gap-2" variant="outline">
+          <Button className="h-24 flex flex-col gap-2" variant="outline" disabled>
             <AlertCircle className="h-6 w-6" />
             <span>Saisir RPE</span>
           </Button>
-          <Button className="h-24 flex flex-col gap-2" variant="outline">
+          <Button className="h-24 flex flex-col gap-2" variant="outline" disabled>
             <TrendingUp className="h-6 w-6" />
             <span>Mes Statistiques</span>
           </Button>
