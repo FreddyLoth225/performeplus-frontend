@@ -115,3 +115,32 @@ export interface SaisieRPE {
   peut_modifier: boolean
   verrouille: boolean
 }
+
+// Interface pour les statistiques joueur
+export interface JoueurStats {
+  id: string
+  profil: ProfilJoueur
+  utilisateur: {
+    nom: string
+    prenoms: string
+    photo?: string
+  }
+  stats: {
+    nombreSeances: number
+    chargeTotal: number
+    chargeMoyenne: number
+    indiceForme: {
+      actuel: number
+      moyenne: number
+    }
+    indicateurs: {
+      ca: number
+      cc: number
+      rca: number
+      im: number
+      ic: number
+    }
+  }
+  dernierIndiceFormeSaisie?: string
+  derniereSeanceRPESaisie?: string
+}
