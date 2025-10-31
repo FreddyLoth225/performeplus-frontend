@@ -1,12 +1,22 @@
 'use client'
 
 import { useTeamStore } from '@/lib/store/team-store'
+import { useDashboardStaff } from '@/lib/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, Bell, TrendingUp, Plus } from 'lucide-react'
+import { Users, Calendar, Bell, TrendingUp, Plus, Loader2 } from 'lucide-react'
 
 export default function StaffDashboard() {
   const { currentTeam } = useTeamStore()
+  const { data: dashboard, isLoading } = useDashboardStaff(currentTeam?.id)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 space-y-8">
@@ -32,8 +42,8 @@ export default function StaffDashboard() {
             <Users className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-success mt-1">Tous disponibles</p>
+            <div className="text-2xl font-bold">{dashboard?.equipe.joueurs_actifs || 0}</div>
+            <p className="text-xs text-success mt-1">Dans l'équipe</p>
           </CardContent>
         </Card>
 
@@ -45,12 +55,12 @@ export default function StaffDashboard() {
             <Calendar className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{dashboard?.kpis.seances_semaine || 0}</div>
             <p className="text-xs text-slate-600 mt-1">Cette semaine</p>
           </CardContent>
         </Card>
 
-        <Card className="border-warning">
+        <Card className={dashboard?.alertes.total ? 'border-warning' : ''}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
               Alertes Actives
@@ -58,21 +68,23 @@ export default function StaffDashboard() {
             <Bell className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">0</div>
-            <p className="text-xs text-slate-600 mt-1">Aucune alerte</p>
+            <div className="text-2xl font-bold text-warning">{dashboard?.alertes.total || 0}</div>
+            <p className="text-xs text-slate-600 mt-1">
+              {dashboard?.alertes.critiques ? `${dashboard.alertes.critiques} critique(s)` : 'Aucune alerte'}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
-              Charge Moyenne
+              Charge Totale
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0 UA</div>
-            <p className="text-xs text-slate-600 mt-1">Par joueur (7j)</p>
+            <div className="text-2xl font-bold">{dashboard?.kpis.charge_totale_periode.toFixed(0) || 0} UA</div>
+            <p className="text-xs text-slate-600 mt-1">Sur la période</p>
           </CardContent>
         </Card>
       </div>

@@ -2,16 +2,16 @@
 
 import { useRouter } from 'next/navigation'
 import { useTeamStore } from '@/lib/store/team-store'
-import { useIndiceForme } from '@/lib/hooks/use-wellness'
+import { useDashboardJoueur } from '@/lib/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Activity, Calendar, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react'
+import { Activity, Calendar, TrendingUp, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export default function PlayerDashboard() {
   const router = useRouter()
   const { currentTeam } = useTeamStore()
-  const { today, isLoadingToday } = useIndiceForme(currentTeam?.id)
+  const { data: dashboard, isLoading } = useDashboardJoueur(currentTeam?.id)
 
   const getScoreColor = (score?: number) => {
     if (!score) return 'text-slate-400'
@@ -27,6 +27,14 @@ export default function PlayerDashboard() {
     if (score < 21) return 'Moyen'
     if (score < 25) return 'Bon'
     return 'Excellent'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -49,18 +57,12 @@ export default function PlayerDashboard() {
             <Activity className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            {isLoadingToday ? (
-              <div className="text-2xl font-bold text-slate-400">...</div>
-            ) : (
-              <>
-                <div className={cn('text-2xl font-bold', getScoreColor(today?.scorTotal))}>
-                  {today?.scorTotal ? `${today.scorTotal}/28` : '--/28'}
-                </div>
-                <p className={cn('text-xs mt-1', getScoreColor(today?.scorTotal))}>
-                  {getScoreLabel(today?.scorTotal)}
-                </p>
-              </>
-            )}
+            <div className={cn('text-2xl font-bold', getScoreColor(dashboard?.indice_forme_jour?.score))}>
+              {dashboard?.indice_forme_jour?.score ? `${dashboard.indice_forme_jour.score}/28` : '--/28'}
+            </div>
+            <p className={cn('text-xs mt-1', getScoreColor(dashboard?.indice_forme_jour?.score))}>
+              {dashboard?.indice_forme_jour?.interpretation.message || 'Non saisi'}
+            </p>
           </CardContent>
         </Card>
 
@@ -72,8 +74,12 @@ export default function PlayerDashboard() {
             <Calendar className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-slate-600 mt-1">Aucune séance récente</p>
+            <div className="text-2xl font-bold">{dashboard?.statistiques_periode.nombre_seances || 0}</div>
+            <p className="text-xs text-slate-600 mt-1">
+              {dashboard?.statistiques_periode.nombre_seances 
+                ? `Charge moyenne: ${dashboard.statistiques_periode.charge_moyenne.toFixed(0)}`
+                : 'Aucune séance récente'}
+            </p>
           </CardContent>
         </Card>
 
@@ -85,7 +91,7 @@ export default function PlayerDashboard() {
             <TrendingUp className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0 UA</div>
+            <div className="text-2xl font-bold">{dashboard?.statistiques_periode.charge_totale.toFixed(0) || 0} UA</div>
             <p className="text-xs text-slate-600 mt-1">Sur 7 derniers jours</p>
           </CardContent>
         </Card>
@@ -98,8 +104,10 @@ export default function PlayerDashboard() {
             <AlertCircle className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-slate-600 mt-1">Aucune saisie en attente</p>
+            <div className="text-2xl font-bold">{dashboard?.seances_sans_rpe || 0}</div>
+            <p className="text-xs text-slate-600 mt-1">
+              {dashboard?.seances_sans_rpe ? 'Saisies en attente' : 'Aucune saisie en attente'}
+            </p>
           </CardContent>
         </Card>
       </div>
