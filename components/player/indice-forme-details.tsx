@@ -86,7 +86,7 @@ export function IndiceFormeDetails({ data, isLoading }: IndiceFormeDetailsProps)
                   <p className={cn('text-2xl font-bold', getScoreColor(item.scorTotal))}>
                     {item.scorTotal}/28
                   </p>
-                  <p className="text-xs text-slate-600">{item.interpretation}</p>
+                  <p className="text-xs text-slate-600">{item.interpretation.message}</p>
                 </div>
               </div>
 

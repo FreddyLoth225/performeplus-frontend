@@ -94,6 +94,12 @@ export interface Seance {
   parametres?: Record<string, any>
 }
 
+export interface InterpretationIndiceForme {
+  niveau: 'TRES_MAUVAIS' | 'MAUVAIS' | 'MOYEN' | 'BON' | 'EXCELLENT'
+  couleur: 'red' | 'orange' | 'green'
+  message: string
+}
+
 export interface IndiceForme {
   id: string
   date: string
@@ -102,7 +108,7 @@ export interface IndiceForme {
   courbatures: number
   stress: number
   scorTotal: number
-  interpretation: string
+  interpretation: InterpretationIndiceForme
   peut_modifier: boolean
 }
 
