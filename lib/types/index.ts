@@ -126,28 +126,48 @@ export interface SaisieRPE {
 // Interface pour les statistiques joueur
 export interface JoueurStats {
   id: string
-  profil: ProfilJoueur
+  membre_id: string
   utilisateur: {
+    id: string
     nom: string
     prenoms: string
+    email: string
     photo?: string
   }
+  profil: {
+    dossard: number
+    poste: 'GARDIEN' | 'DEFENSEUR' | 'MILIEU' | 'ATTAQUANT'
+    piedFort?: 'GAUCHE' | 'DROITE' | 'AMBIDEXTRE'
+    dateNaissance: string
+    age: number
+    poids?: number
+    taille?: number
+    nationalite?: string
+    statut: 'ACTIF' | 'BLESSE' | 'SUSPENDU' | 'PRET' | 'DEPART'
+  }
+  statistiques: {
+    seances_effectuees: number
+    rca_moyen: number
+    im_moyen: number
+    ic_moyen: number
+    alertes_actives: number
+  }
+  indice_forme_actuel?: {
+    score: number
+    date: string
+    interpretation: InterpretationIndiceForme
+  } | null
+  dateAdhesion: string
+  // Propriétés calculées pour compatibilité avec l'ancien format
   stats: {
     nombreSeances: number
-    chargeTotal: number
-    chargeMoyenne: number
     indiceForme: {
-      actuel: number
-      moyenne: number
+      actuel: number | null
     }
     indicateurs: {
-      ca: number
-      cc: number
       rca: number
       im: number
       ic: number
     }
   }
-  dernierIndiceFormeSaisie?: string
-  derniereSeanceRPESaisie?: string
 }

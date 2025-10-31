@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { ProfilJoueur } from '@/lib/types'
+import { ProfilJoueur, JoueurStats } from '@/lib/types'
 
 export interface CreatePlayerData {
   equipe_id: string
@@ -24,36 +24,32 @@ export interface ImportPlayersData {
   equipe_id: string
 }
 
-export interface PlayerStats {
-  id: string
-  profil: ProfilJoueur
-  stats: {
-    nombreSeances: number
-    chargeTotal: number
-    chargeMoyenne: number
-    indiceForme: {
-      actuel: number
-      moyenne: number
-    }
-    indicateurs: {
-      ca: number
-      cc: number
-      rca: number
-      im: number
-      ic: number
-    }
-  }
-}
-
 export const playerService = {
   // Récupérer la liste des joueurs d'une équipe
-  async getPlayers(equipeId: string): Promise<PlayerStats[]> {
+  async getPlayers(equipeId: string): Promise<JoueurStats[]> {
     const response = await apiClient.get(`/equipes/${equipeId}/joueurs/`)
-    return response.data
+    // Le backend retourne { joueurs: [...], total: number }
+    const joueurs = response.data.joueurs || []
+    
+    // Transformer les données pour ajouter les propriétés calculées
+    return joueurs.map((joueur: any) => ({
+      ...joueur,
+      stats: {
+        nombreSeances: joueur.statistiques.seances_effectuees,
+        indiceForme: {
+          actuel: joueur.indice_forme_actuel?.score || null,
+        },
+        indicateurs: {
+          rca: joueur.statistiques.rca_moyen,
+          im: joueur.statistiques.im_moyen,
+          ic: joueur.statistiques.ic_moyen,
+        },
+      },
+    }))
   },
 
   // Récupérer un joueur spécifique
-  async getPlayer(profilId: string): Promise<PlayerStats> {
+  async getPlayer(profilId: string): Promise<JoueurStats> {
     const response = await apiClient.get(`/joueurs/${profilId}/`)
     return response.data
   },
