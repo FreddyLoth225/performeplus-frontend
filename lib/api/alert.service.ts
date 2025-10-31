@@ -37,7 +37,8 @@ export const alertService = {
     })
 
     const response = await apiClient.get(`/alertes/?${params.toString()}`)
-    return response.data
+    // Le backend retourne { alertes: [...], statistiques: {...} }
+    return response.data.alertes || []
   },
 
   // Récupérer une alerte spécifique
