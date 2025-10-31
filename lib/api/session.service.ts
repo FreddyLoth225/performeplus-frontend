@@ -42,7 +42,8 @@ export const sessionService = {
         date_fin: dateFin,
       }
     })
-    return response.data
+    // Le backend retourne { seances: [...], periode: {...} }
+    return response.data.seances || []
   },
 
   // 🆕 NOUVELLES MÉTHODES (POUR STAFF/OWNER)

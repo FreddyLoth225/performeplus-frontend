@@ -91,6 +91,7 @@ export interface Seance {
   description?: string
   statut: StatutSeance
   createur?: string
+  parametres?: Record<string, any>
 }
 
 export interface IndiceForme {
