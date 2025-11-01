@@ -1,7 +1,11 @@
 'use client'
 
+import { useMemo } from 'react'
+import { addDays, format } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import { useTeamStore } from '@/lib/store/team-store'
 import { useDashboardStaff } from '@/lib/hooks/use-dashboard'
+import { useSessions } from '@/lib/hooks/use-sessions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Users, Calendar, Bell, TrendingUp, Plus, Loader2 } from 'lucide-react'
@@ -9,6 +13,51 @@ import { Users, Calendar, Bell, TrendingUp, Plus, Loader2 } from 'lucide-react'
 export default function StaffDashboard() {
   const { currentTeam } = useTeamStore()
   const { data: dashboard, isLoading } = useDashboardStaff(currentTeam?.id)
+  const sessionFilters = useMemo(() => {
+    if (!currentTeam?.id) return undefined
+    const now = new Date()
+    return {
+      date_debut: now.toISOString(),
+      date_fin: addDays(now, 7).toISOString(),
+    }
+  }, [currentTeam?.id])
+  const { data: upcomingSessions, isLoading: isLoadingSessions } = useSessions(
+    currentTeam?.id || '',
+    sessionFilters
+  )
+
+  const sessions = useMemo(() => {
+    if (!upcomingSessions) return []
+    return [...upcomingSessions]
+      .filter((seance) => new Date(seance.dateDebut) >= new Date())
+      .sort(
+        (a, b) =>
+          new Date(a.dateDebut).getTime() - new Date(b.dateDebut).getTime()
+      )
+      .slice(0, 5)
+  }, [upcomingSessions])
+
+  const urgentAlerts = dashboard?.alertes.alertes_urgentes || []
+  const joueursActifs =
+    typeof dashboard?.equipe.joueurs_actifs === 'number'
+      ? dashboard.equipe.joueurs_actifs
+      : null
+  const seancesSemaine =
+    typeof dashboard?.kpis.seances_semaine === 'number'
+      ? dashboard.kpis.seances_semaine
+      : null
+  const chargeTotale =
+    typeof dashboard?.kpis.charge_totale_periode === 'number'
+      ? Math.round(dashboard.kpis.charge_totale_periode)
+      : null
+  const alertesTotal =
+    typeof dashboard?.alertes.total === 'number'
+      ? dashboard.alertes.total
+      : null
+  const alertesCritiques =
+    typeof dashboard?.alertes.critiques === 'number'
+      ? dashboard.alertes.critiques
+      : null
 
   if (isLoading) {
     return (
@@ -42,7 +91,9 @@ export default function StaffDashboard() {
             <Users className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.equipe.joueurs_actifs || 0}</div>
+            <div className="text-2xl font-bold">
+              {joueursActifs != null ? joueursActifs : '--'}
+            </div>
             <p className="text-xs text-success mt-1">Dans l'équipe</p>
           </CardContent>
         </Card>
@@ -55,12 +106,14 @@ export default function StaffDashboard() {
             <Calendar className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.kpis.seances_semaine || 0}</div>
+            <div className="text-2xl font-bold">
+              {seancesSemaine != null ? seancesSemaine : '--'}
+            </div>
             <p className="text-xs text-slate-600 mt-1">Cette semaine</p>
           </CardContent>
         </Card>
 
-        <Card className={dashboard?.alertes.total ? 'border-warning' : ''}>
+        <Card className={alertesTotal ? 'border-warning' : ''}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
               Alertes Actives
@@ -68,9 +121,13 @@ export default function StaffDashboard() {
             <Bell className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{dashboard?.alertes.total || 0}</div>
+            <div className="text-2xl font-bold text-warning">
+              {alertesTotal != null ? alertesTotal : '--'}
+            </div>
             <p className="text-xs text-slate-600 mt-1">
-              {dashboard?.alertes.critiques ? `${dashboard.alertes.critiques} critique(s)` : 'Aucune alerte'}
+              {alertesCritiques
+                ? `${alertesCritiques} critique(s)`
+                : 'Aucune alerte'}
             </p>
           </CardContent>
         </Card>
@@ -83,7 +140,9 @@ export default function StaffDashboard() {
             <TrendingUp className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.kpis.charge_totale_periode.toFixed(0) || 0} UA</div>
+            <div className="text-2xl font-bold">
+              {chargeTotale != null ? `${chargeTotale} UA` : '--'}
+            </div>
             <p className="text-xs text-slate-600 mt-1">Sur la période</p>
           </CardContent>
         </Card>
@@ -98,11 +157,39 @@ export default function StaffDashboard() {
             <CardDescription>Surveillez l'état de vos joueurs</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-slate-500">
-              <Bell className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-              <p>Aucune alerte pour le moment</p>
-              <p className="text-sm mt-2">Les alertes apparaîtront ici automatiquement</p>
-            </div>
+            {urgentAlerts.length > 0 ? (
+              <div className="space-y-4">
+                {urgentAlerts.map((alerte) => (
+                  <div
+                    key={alerte.id}
+                    className="border rounded-lg p-4 flex flex-col gap-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-900">
+                        {alerte.message}
+                      </span>
+                      <span className="text-xs uppercase text-warning">
+                        {alerte.niveau}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-600 flex items-center justify-between">
+                      <span>{alerte.joueur || 'Équipe entière'}</span>
+                      <span>
+                        {format(new Date(alerte.date), 'PPP p', { locale: fr })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <Bell className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                <p>Aucune alerte pour le moment</p>
+                <p className="text-sm mt-2">
+                  Les alertes apparaîtront ici automatiquement
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -139,14 +226,38 @@ export default function StaffDashboard() {
           <CardDescription>Planning de la semaine</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-slate-500">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-            <p>Aucune séance planifiée</p>
-            <Button className="mt-4" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Créer une séance
-            </Button>
-          </div>
+          {isLoadingSessions ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : sessions.length > 0 ? (
+            <div className="space-y-4">
+              {sessions.map((seance) => (
+                <div key={seance.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{seance.type}</p>
+                      <p className="text-sm text-slate-600">
+                        {format(new Date(seance.dateDebut), 'PPP p', { locale: fr })}
+                      </p>
+                    </div>
+                    <span className="text-sm text-slate-500">
+                      {seance.lieu || 'Lieu à confirmer'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <p>Aucune séance planifiée</p>
+              <Button className="mt-4" variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Créer une séance
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -140,6 +140,47 @@ export const dashboardService = {
     const response = await apiClient.get('/dashboard/staff/', {
       params: { equipe_id: equipeId, periode }
     })
-    return response.data
+    const data = response.data
+    const vue = data.vue_ensemble || {}
+    const alertesStats = vue.alertes || {}
+
+    const transformed: DashboardStaff = {
+      equipe: {
+        nom: data.equipe?.nom || '',
+        joueurs_actifs: vue.joueurs_actifs || 0,
+      },
+      kpis: {
+        seances_semaine: vue.seances_semaine || 0,
+        charge_totale_periode: vue.charge_totale_periode || 0,
+        taux_saisie_rpe: vue.taux_saisie_rpe || 0,
+        taux_saisie_indice: vue.taux_saisie_indice_forme || 0,
+      },
+      alertes: {
+        total: alertesStats.total || 0,
+        critiques: alertesStats.critiques || 0,
+        attention: alertesStats.attention || 0,
+        info: alertesStats.info || 0,
+        alertes_urgentes: data.alertes_urgentes || [],
+      },
+      graphiques: {
+        charge_equipe: data.graphiques?.charge_equipe || [],
+        distribution_rpe: data.graphiques?.distribution_rpe || {},
+        indice_forme_moyen: data.graphiques?.indice_forme_moyen || [],
+      },
+      joueurs: (data.joueurs || []).map((joueur: any) => ({
+        id: joueur.id,
+        nom: joueur.nom,
+        dossard: joueur.dossard,
+        poste: joueur.poste,
+        indice_forme: joueur.indice_forme?.score ?? null,
+        rca: joueur.indicateurs?.rca ?? 0,
+        im: joueur.indicateurs?.im ?? 0,
+        ic: joueur.indicateurs?.ic ?? 0,
+        alertes_actives: joueur.alertes_actives ?? 0,
+        derniere_saisie: joueur.derniere_saisie ?? null,
+      })),
+    }
+
+    return transformed
   },
 }

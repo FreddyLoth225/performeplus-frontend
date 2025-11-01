@@ -1,6 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import { useTeamStore } from '@/lib/store/team-store'
 import { useDashboardJoueur } from '@/lib/hooks/use-dashboard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +38,20 @@ export default function PlayerDashboard() {
       </div>
     )
   }
+
+  const chargeTotale =
+    typeof dashboard?.statistiques_periode.charge_totale === 'number'
+      ? Math.round(dashboard.statistiques_periode.charge_totale)
+      : null
+  const chargeMoyenne =
+    typeof dashboard?.statistiques_periode.charge_moyenne === 'number'
+      ? dashboard.statistiques_periode.charge_moyenne
+      : null
+  const seancesSansRpe =
+    typeof dashboard?.seances_sans_rpe === 'number'
+      ? dashboard.seances_sans_rpe
+      : null
+  const upcomingSessions = (dashboard?.prochaines_seances || []).slice(0, 3)
 
   return (
     <div className="p-8 space-y-8">
@@ -77,7 +93,7 @@ export default function PlayerDashboard() {
             <div className="text-2xl font-bold">{dashboard?.statistiques_periode.nombre_seances || 0}</div>
             <p className="text-xs text-slate-600 mt-1">
               {dashboard?.statistiques_periode.nombre_seances 
-                ? `Charge moyenne: ${dashboard.statistiques_periode.charge_moyenne.toFixed(0)}`
+                ? `Charge moyenne: ${chargeMoyenne != null ? Math.round(chargeMoyenne) : '--'}`
                 : 'Aucune séance récente'}
             </p>
           </CardContent>
@@ -91,7 +107,9 @@ export default function PlayerDashboard() {
             <TrendingUp className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.statistiques_periode.charge_totale.toFixed(0) || 0} UA</div>
+            <div className="text-2xl font-bold">
+              {chargeTotale != null ? `${chargeTotale} UA` : '--'}
+            </div>
             <p className="text-xs text-slate-600 mt-1">Sur 7 derniers jours</p>
           </CardContent>
         </Card>
@@ -104,7 +122,9 @@ export default function PlayerDashboard() {
             <AlertCircle className="h-4 w-4 text-slate-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboard?.seances_sans_rpe || 0}</div>
+            <div className="text-2xl font-bold">
+              {seancesSansRpe != null ? seancesSansRpe : '--'}
+            </div>
             <p className="text-xs text-slate-600 mt-1">
               {dashboard?.seances_sans_rpe ? 'Saisies en attente' : 'Aucune saisie en attente'}
             </p>
@@ -148,10 +168,35 @@ export default function PlayerDashboard() {
           <CardDescription>Votre prochain entraînement</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-slate-500">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-            <p>Aucune séance planifiée</p>
-          </div>
+          {upcomingSessions.length > 0 ? (
+            <div className="space-y-4">
+              {upcomingSessions.map((seance) => (
+                <div key={seance.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-slate-900">{seance.type}</p>
+                      <p className="text-sm text-slate-600">
+                        {format(new Date(seance.date), 'PPP p', { locale: fr })}
+                      </p>
+                    </div>
+                    <span className="text-sm text-slate-500">
+                      {seance.lieu || 'Lieu à confirmer'}
+                    </span>
+                  </div>
+                  {seance.description && (
+                    <p className="text-xs text-slate-600 mt-2">
+                      {seance.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <p>Aucune séance planifiée</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

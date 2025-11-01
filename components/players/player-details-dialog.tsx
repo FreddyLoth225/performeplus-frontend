@@ -82,6 +82,20 @@ export function PlayerDetailsDialog({ playerId, open, onOpenChange }: PlayerDeta
     onOpenChange(false)
   }
 
+  const statsData = stats as any
+  const indicatorsData = indicators as any
+  const currentFormScore = player?.stats.indiceForme.actuel ?? player?.indice_forme_actuel?.score ?? null
+  const formeMoyenne = (() => {
+    if (typeof statsData?.indice_forme_moyen === 'number') return statsData.indice_forme_moyen
+    if (typeof statsData?.moyenne_indice_forme === 'number') return statsData.moyenne_indice_forme
+    if (typeof statsData?.resume?.indice_forme_moyen === 'number') return statsData.resume.indice_forme_moyen
+    return null
+  })()
+  const chargeMoyenne = typeof statsData?.charge_moyenne === 'number' ? statsData.charge_moyenne : null
+  const chargeTotale = typeof statsData?.charge_totale === 'number' ? statsData.charge_totale : null
+  const chargeAigue = typeof indicatorsData?.ca === 'number' ? indicatorsData.ca : null
+  const chargeChronique = typeof indicatorsData?.cc === 'number' ? indicatorsData.cc : null
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
@@ -142,10 +156,10 @@ export function PlayerDetailsDialog({ playerId, open, onOpenChange }: PlayerDeta
                     <CardContent className="p-4">
                       <div className="text-sm text-slate-600 mb-1">Forme actuelle</div>
                       <div className="text-2xl font-bold">
-                        {player.stats.indiceForme.actuel || '-'}/28
+                        {currentFormScore != null ? `${currentFormScore}/28` : '--/28'}
                       </div>
                       <div className="text-xs text-slate-500 mt-1">
-                        Moy: {player.stats.indiceForme.moyenne.toFixed(1)}
+                        Moy: {formeMoyenne != null ? formeMoyenne.toFixed(1) : '--'}
                       </div>
                     </CardContent>
                   </Card>
@@ -176,7 +190,7 @@ export function PlayerDetailsDialog({ playerId, open, onOpenChange }: PlayerDeta
                         {player.stats.nombreSeances}
                       </div>
                       <div className="text-xs text-slate-500 mt-1">
-                        Charge moy: {player.stats.chargeMoyenne.toFixed(0)} UA
+                        Charge moy: {chargeMoyenne != null ? Math.round(chargeMoyenne) : '--'} UA
                       </div>
                     </CardContent>
                   </Card>
@@ -242,12 +256,12 @@ export function PlayerDetailsDialog({ playerId, open, onOpenChange }: PlayerDeta
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">Charge Aiguë (CA)</span>
-                        <span className="font-medium">{player.stats.indicateurs.ca.toFixed(0)} UA</span>
+                        <span className="font-medium">{chargeAigue != null ? Math.round(chargeAigue) : '--'} UA</span>
                       </div>
                       <Separator />
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">Charge Chronique (CC)</span>
-                        <span className="font-medium">{player.stats.indicateurs.cc.toFixed(0)} UA</span>
+                        <span className="font-medium">{chargeChronique != null ? Math.round(chargeChronique) : '--'} UA</span>
                       </div>
                       <Separator />
                       <div className="flex items-center justify-between">
@@ -257,7 +271,7 @@ export function PlayerDetailsDialog({ playerId, open, onOpenChange }: PlayerDeta
                       <Separator />
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">Charge totale (30j)</span>
-                        <span className="font-medium">{player.stats.chargeTotal.toFixed(0)} UA</span>
+                        <span className="font-medium">{chargeTotale != null ? Math.round(chargeTotale) : '--'} UA</span>
                       </div>
                     </div>
                   </CardContent>
