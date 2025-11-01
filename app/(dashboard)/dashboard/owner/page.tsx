@@ -1,18 +1,33 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { addDays, format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useTeamStore } from '@/lib/store/team-store'
 import { useDashboardStaff } from '@/lib/hooks/use-dashboard'
 import { useSessions } from '@/lib/hooks/use-sessions'
+import { InvitePlayerDialog } from '@/components/players/invite-player-dialog'
+import { CreateSessionDialog } from '@/components/sessions/create-session-dialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Users, Calendar, Bell, Settings, TrendingUp, Plus, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function OwnerDashboard() {
   const { currentTeam } = useTeamStore()
   const { data: dashboard } = useDashboardStaff(currentTeam?.id)
+  const router = useRouter()
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [createSessionDialogOpen, setCreateSessionDialogOpen] = useState(false)
+
+  const ensureTeamSelected = () => {
+    if (!currentTeam?.id) {
+      toast.error('Veuillez sélectionner une équipe pour continuer.')
+      return false
+    }
+    return true
+  }
   const sessionFilters = useMemo(() => {
     if (!currentTeam?.id) return undefined
     const now = new Date()
@@ -70,11 +85,19 @@ export default function OwnerDashboard() {
           <p className="text-slate-600 mt-1">{currentTeam?.nom}</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() => toast.info('Les paramètres d’équipe arrivent bientôt.')}
+          >
             <Settings className="mr-2 h-4 w-4" />
             Paramètres
           </Button>
-          <Button>
+          <Button
+            onClick={() => {
+              if (!ensureTeamSelected()) return
+              setCreateSessionDialogOpen(true)
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle Séance
           </Button>
@@ -156,19 +179,44 @@ export default function OwnerDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Button className="h-20 flex flex-col gap-2" variant="outline">
+              <Button
+                className="h-20 flex flex-col gap-2"
+                variant="outline"
+                onClick={() => {
+                  if (!ensureTeamSelected()) return
+                  setInviteDialogOpen(true)
+                }}
+              >
                 <Users className="h-6 w-6" />
                 <span>Inviter Joueurs</span>
               </Button>
-              <Button className="h-20 flex flex-col gap-2" variant="outline">
+              <Button
+                className="h-20 flex flex-col gap-2"
+                variant="outline"
+                onClick={() => {
+                  if (!ensureTeamSelected()) return
+                  setCreateSessionDialogOpen(true)
+                }}
+              >
                 <Calendar className="h-6 w-6" />
                 <span>Planifier Séance</span>
               </Button>
-              <Button className="h-20 flex flex-col gap-2" variant="outline">
+              <Button
+                className="h-20 flex flex-col gap-2"
+                variant="outline"
+                onClick={() => {
+                  if (!ensureTeamSelected()) return
+                  router.push('/dashboard/players')
+                }}
+              >
                 <TrendingUp className="h-6 w-6" />
                 <span>Analyser Charges</span>
               </Button>
-              <Button className="h-20 flex flex-col gap-2" variant="outline">
+              <Button
+                className="h-20 flex flex-col gap-2"
+                variant="outline"
+                onClick={() => toast.info('Le paramétrage des seuils sera bientôt disponible.')}
+              >
                 <Settings className="h-6 w-6" />
                 <span>Configurer Seuils</span>
               </Button>
@@ -278,7 +326,14 @@ export default function OwnerDashboard() {
               <div className="text-center py-8 text-slate-500">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                 <p>Aucune échéance</p>
-                <Button className="mt-4" variant="outline">
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  onClick={() => {
+                    if (!ensureTeamSelected()) return
+                    setCreateSessionDialogOpen(true)
+                  }}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Créer une séance
                 </Button>
@@ -287,6 +342,16 @@ export default function OwnerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <InvitePlayerDialog
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+      />
+
+      <CreateSessionDialog
+        open={createSessionDialogOpen}
+        onOpenChange={setCreateSessionDialogOpen}
+      />
     </div>
   )
 }
