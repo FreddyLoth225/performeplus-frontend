@@ -81,6 +81,21 @@ export interface ProfilJoueur {
   statut: 'ACTIF' | 'BLESSE' | 'SUSPENDU' | 'PRET' | 'DEPART'
 }
 
+export interface JoueurHistoriqueEntry {
+  id: string
+  dateChangement: string
+  champModifie: string
+  ancienneValeur: string
+  nouvelleValeur: string
+  commentaire?: string | null
+  utilisateur: {
+    id: string
+    nom: string
+    prenoms: string
+    email: string
+  } | null
+}
+
 export interface Seance {
   id: string
   equipe_id: string
@@ -158,6 +173,18 @@ export interface JoueurStats {
     interpretation: InterpretationIndiceForme
   } | null
   dateAdhesion: string
+  membre?: {
+    id: string
+    archive: boolean
+    actif: boolean
+    dateAdhesion: string
+    dateFin?: string | null
+  }
+  permissions?: {
+    canModify: boolean
+    canArchive: boolean
+  }
+  historique?: JoueurHistoriqueEntry[]
   // Propriétés calculées pour compatibilité avec l'ancien format
   stats: {
     nombreSeances: number

@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { playerService, CreatePlayerData, UpdatePlayerData, ImportPlayersData } from '../api/player.service'
+import {
+  playerService,
+  CreatePlayerData,
+  UpdatePlayerData,
+  ImportPlayersData,
+  ArchivePlayerPayload,
+  ReactivatePlayerPayload,
+  PlayerMutationResponse,
+} from '../api/player.service'
 import { toast } from 'sonner'
 
 // Liste des joueurs d'une équipe
@@ -59,13 +67,15 @@ export function useCreatePlayer() {
 export function useUpdatePlayer() {
   const queryClient = useQueryClient()
 
-  return useMutation({
+  return useMutation<PlayerMutationResponse, unknown, { profilId: string; data: UpdatePlayerData }>({
     mutationFn: ({ profilId, data }: { profilId: string; data: UpdatePlayerData }) =>
       playerService.updatePlayer(profilId, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['players'] })
       queryClient.invalidateQueries({ queryKey: ['player', variables.profilId] })
-      toast.success('Profil mis à jour')
+      queryClient.invalidateQueries({ queryKey: ['player-stats', variables.profilId] })
+      queryClient.invalidateQueries({ queryKey: ['player-indicators', variables.profilId] })
+      toast.success(data?.message ?? 'Profil mis à jour')
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Erreur lors de la mise à jour'
@@ -78,11 +88,14 @@ export function useUpdatePlayer() {
 export function useArchivePlayer() {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: (membreId: string) => playerService.archivePlayer(membreId),
-    onSuccess: () => {
+  return useMutation<PlayerMutationResponse, unknown, ArchivePlayerPayload>({
+    mutationFn: (payload) => playerService.archivePlayer(payload),
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['players'] })
-      toast.success('Joueur archivé')
+      queryClient.invalidateQueries({ queryKey: ['player', variables.profilId] })
+      queryClient.invalidateQueries({ queryKey: ['player-stats', variables.profilId] })
+      queryClient.invalidateQueries({ queryKey: ['player-indicators', variables.profilId] })
+      toast.success(data?.message ?? 'Joueur archivé')
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Erreur lors de l'archivage"
@@ -95,11 +108,14 @@ export function useArchivePlayer() {
 export function useReactivatePlayer() {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: (membreId: string) => playerService.reactivatePlayer(membreId),
-    onSuccess: () => {
+  return useMutation<PlayerMutationResponse, unknown, ReactivatePlayerPayload>({
+    mutationFn: (payload) => playerService.reactivatePlayer(payload),
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['players'] })
-      toast.success('Joueur réactivé')
+      queryClient.invalidateQueries({ queryKey: ['player', variables.profilId] })
+      queryClient.invalidateQueries({ queryKey: ['player-stats', variables.profilId] })
+      queryClient.invalidateQueries({ queryKey: ['player-indicators', variables.profilId] })
+      toast.success(data?.message ?? 'Joueur réactivé')
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Erreur lors de la réactivation'

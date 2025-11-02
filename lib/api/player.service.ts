@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { ProfilJoueur, JoueurStats } from '@/lib/types'
+import { JoueurStats } from '@/lib/types'
 
 export interface CreatePlayerData {
   equipe_id: string
@@ -17,11 +17,28 @@ export interface CreatePlayerData {
 
 export interface UpdatePlayerData extends Partial<Omit<CreatePlayerData, 'equipe_id' | 'email'>> {
   statut?: 'ACTIF' | 'BLESSE' | 'SUSPENDU' | 'PRET' | 'DEPART'
+  commentaire?: string
 }
 
 export interface ImportPlayersData {
   file: File
   equipe_id: string
+}
+
+export interface ArchivePlayerPayload {
+  profilId: string
+  motif?: string
+  commentaire?: string
+}
+
+export interface ReactivatePlayerPayload {
+  profilId: string
+  commentaire?: string
+}
+
+export interface PlayerMutationResponse {
+  message: string
+  profil: JoueurStats
 }
 
 export const playerService = {
@@ -74,19 +91,28 @@ export const playerService = {
   },
 
   // Mettre à jour un profil joueur
-  async updatePlayer(profilId: string, data: UpdatePlayerData): Promise<ProfilJoueur> {
+  async updatePlayer(profilId: string, data: UpdatePlayerData): Promise<PlayerMutationResponse> {
     const response = await apiClient.patch(`/joueurs/${profilId}/`, data)
     return response.data
   },
 
   // Archiver un joueur
-  async archivePlayer(membreId: string): Promise<void> {
-    await apiClient.patch(`/membres/${membreId}/`, { archive: true })
+  async archivePlayer({ profilId, motif, commentaire }: ArchivePlayerPayload): Promise<PlayerMutationResponse> {
+    const response = await apiClient.patch(`/joueurs/${profilId}/archive/`, {
+      archive: true,
+      motif: motif?.trim() || undefined,
+      commentaire: commentaire?.trim() || undefined,
+    })
+    return response.data
   },
 
   // Réactiver un joueur
-  async reactivatePlayer(membreId: string): Promise<void> {
-    await apiClient.patch(`/membres/${membreId}/`, { archive: false })
+  async reactivatePlayer({ profilId, commentaire }: ReactivatePlayerPayload): Promise<PlayerMutationResponse> {
+    const response = await apiClient.patch(`/joueurs/${profilId}/archive/`, {
+      archive: false,
+      commentaire: commentaire?.trim() || undefined,
+    })
+    return response.data
   },
 
   // Import en masse

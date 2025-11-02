@@ -496,7 +496,7 @@ export default function ProfilePage() {
                   <p className="font-medium">Double authentification par email</p>
                 </div>
                 <p className="text-sm text-slate-600">
-                  Recevez un code par email à chaque connexion. Obligatoire pour les agents et directeurs.
+                  Recevez un code par email à chaque connexion.
                 </p>
               </div>
               <Checkbox
@@ -591,7 +591,7 @@ export default function ProfilePage() {
                 <Input
                   id="email_password"
                   type="password"
-                  autoComplete="current-password"
+                //   autoComplete="current-password"
                   {...emailForm.register('password')}
                 />
                 {emailErrors.password && (
