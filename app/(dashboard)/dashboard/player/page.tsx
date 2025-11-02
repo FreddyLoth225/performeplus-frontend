@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useTeamStore } from '@/lib/store/team-store'
 import { useDashboardJoueur } from '@/lib/hooks/use-dashboard'
 import { PlayerCharts } from '@/components/player/player-charts'
+import { CorrelationChart } from '@/components/player/correlation-chart'
+import { PeriodSelector } from '@/components/player/period-selector'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Activity, Calendar, TrendingUp, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
@@ -14,7 +17,8 @@ import { cn } from '@/lib/utils'
 export default function PlayerDashboard() {
   const router = useRouter()
   const { currentTeam } = useTeamStore()
-  const { data: dashboard, isLoading } = useDashboardJoueur(currentTeam?.id)
+  const [selectedPeriod, setSelectedPeriod] = useState(7)
+  const { data: dashboard, isLoading } = useDashboardJoueur(currentTeam?.id, selectedPeriod)
 
   const getScoreColor = (score?: number) => {
     if (!score) return 'text-slate-400'
@@ -298,12 +302,20 @@ export default function PlayerDashboard() {
         </CardContent>
       </Card>
 
-      {/* Mes Statistiques (7 derniers jours) */}
+      {/* Mes Statistiques */}
       {dashboard?.statistiques_periode && (
         <Card>
           <CardHeader>
-            <CardTitle>Mes Statistiques - 7 Derniers Jours</CardTitle>
-            <CardDescription>Vue d'ensemble de vos performances</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Mes Statistiques</CardTitle>
+                <CardDescription>Vue d'ensemble de vos performances</CardDescription>
+              </div>
+              <PeriodSelector 
+                selectedPeriod={selectedPeriod}
+                onPeriodChange={setSelectedPeriod}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -338,11 +350,19 @@ export default function PlayerDashboard() {
 
       {/* Graphiques Évolution */}
       {dashboard?.graphiques && (
-        <PlayerCharts
-          chargeData={dashboard.graphiques.evolution_charge || []}
-          indiceFormeData={dashboard.graphiques.evolution_indice_forme || []}
-          isLoading={isLoading}
-        />
+        <>
+          <PlayerCharts
+            chargeData={dashboard.graphiques.evolution_charge || []}
+            indiceFormeData={dashboard.graphiques.evolution_indice_forme || []}
+            isLoading={isLoading}
+          />
+          
+          {/* Graphique de corrélation */}
+          <CorrelationChart
+            chargeData={dashboard.graphiques.evolution_charge || []}
+            indiceFormeData={dashboard.graphiques.evolution_indice_forme || []}
+          />
+        </>
       )}
     </div>
   )
