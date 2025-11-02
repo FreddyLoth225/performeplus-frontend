@@ -20,7 +20,7 @@ export const useTeamStore = create<TeamState>()(
       setCurrentTeam: (team, membership) =>
         set({ currentTeam: team, currentMembership: membership }),
       setTeams: (teams) => set({ teams }),
-      clearTeam: () => set({ currentTeam: null, currentMembership: null }),
+      clearTeam: () => set({ currentTeam: null, currentMembership: null, teams: [] }),
     }),
     {
       name: 'team-storage',

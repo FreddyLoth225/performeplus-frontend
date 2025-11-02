@@ -1,6 +1,7 @@
+// app/(dashboard)/dashboard/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useTeamStore } from '@/lib/store/team-store'
@@ -13,39 +14,54 @@ import { RoleEquipe } from '@/lib/types'
 export default function DashboardPage() {
   const router = useRouter()
   const { user } = useAuthStore()
-  const { currentTeam, currentMembership, setCurrentTeam } = useTeamStore()
+  const { currentTeam, currentMembership, setCurrentTeam, clearTeam, setTeams } = useTeamStore()
   const { data: teams, isLoading, isError } = useTeams()
-  const [isRedirecting, setIsRedirecting] = useState(false)
 
-  // Sélectionner automatiquement la première équipe si aucune n'est sélectionnée
+  // Synchroniser l'état des équipes avec le store et gérer la sélection
   useEffect(() => {
-    if (teams && teams.length > 0 && !currentTeam) {
-      console.log('Sélection automatique de la première équipe:', teams[0])
-      setCurrentTeam(teams[0].equipe, teams[0].membership)
+    if (!teams) return
+
+    setTeams(teams.map((team) => team.equipe))
+
+    if (teams.length === 0) {
+      clearTeam()
+      return
     }
-  }, [teams, currentTeam, setCurrentTeam])
+
+    const matchingEntry = currentTeam
+      ? teams.find((team) => team.equipe.id === currentTeam.id)
+      : null
+
+    if (!matchingEntry) {
+      setCurrentTeam(teams[0].equipe, teams[0].membership)
+      return
+    }
+
+    const membershipChanged =
+      currentMembership?.id !== matchingEntry.membership.id ||
+      currentMembership?.role !== matchingEntry.membership.role
+
+    if (membershipChanged) {
+      setCurrentTeam(matchingEntry.equipe, matchingEntry.membership)
+    }
+  }, [teams, currentTeam, currentMembership, setCurrentTeam, setTeams, clearTeam])
 
   // Rediriger selon le rôle une fois que l'équipe est sélectionnée
   useEffect(() => {
-    if (currentMembership && !isRedirecting) {
-      console.log('Redirection selon le rôle:', currentMembership.role)
-      setIsRedirecting(true)
+    if (currentMembership && !isLoading) {
+      console.log('🔀 Redirection selon le rôle:', currentMembership.role)
       
-      switch (currentMembership.role) {
-        case RoleEquipe.PLAYER:
-          router.push('/dashboard/player')
-          break
-        case RoleEquipe.STAFF:
-          router.push('/dashboard/staff')
-          break
-        case RoleEquipe.OWNER:
-          router.push('/dashboard/owner')
-          break
-        default:
-          setIsRedirecting(false)
+      const redirectPath = {
+        [RoleEquipe.PLAYER]: '/dashboard/player',
+        [RoleEquipe.STAFF]: '/dashboard/staff',
+        [RoleEquipe.OWNER]: '/dashboard/owner',
+      }[currentMembership.role]
+
+      if (redirectPath) {
+        router.push(redirectPath)
       }
     }
-  }, [currentMembership, router, isRedirecting])
+  }, [currentMembership, router, isLoading])
 
   if (isLoading) {
     return (
@@ -61,7 +77,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center h-screen p-8">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
-            <CardTitle className="text-danger">Erreur</CardTitle>
+            <CardTitle className="text-red-600">Erreur</CardTitle>
             <CardDescription>
               Impossible de charger vos équipes
             </CardDescription>

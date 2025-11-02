@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -31,6 +31,23 @@ import { useCreateSession } from '@/lib/hooks/use-sessions'
 import { useTeamStore } from '@/lib/store/team-store'
 import { CalendarIcon, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
+const getDefaultTime = (baseDate: Date) => {
+  const date = new Date(baseDate)
+  const minutes = date.getMinutes()
+  const quarter = Math.ceil(minutes / 15)
+  let hour = date.getHours()
+  let roundedMinutes = quarter * 15
+
+  if (roundedMinutes >= 60) {
+    hour = (hour + 1) % 24
+    roundedMinutes = 0
+  }
+
+  const pad = (value: number) => value.toString().padStart(2, '0')
+  return `${pad(hour)}:${pad(roundedMinutes)}`
+}
 
 const sessionSchema = z.object({
   type: z.enum(['ENTRAINEMENT', 'MATCH', 'RECUPERATION', 'AUTRE']),
@@ -58,6 +75,9 @@ export function CreateSessionDialog({
   const createSession = useCreateSession()
   const [datePickerOpen, setDatePickerOpen] = useState(false)
 
+  const initialDate = useMemo(() => defaultDate || new Date(), [defaultDate])
+  const defaultTime = useMemo(() => getDefaultTime(initialDate), [initialDate])
+
   const {
     register,
     handleSubmit,
@@ -69,8 +89,8 @@ export function CreateSessionDialog({
     resolver: zodResolver(sessionSchema),
     defaultValues: {
       type: 'ENTRAINEMENT',
-      dateDebut: defaultDate || new Date(),
-      heureDebut: '09:00',
+      dateDebut: initialDate,
+      heureDebut: defaultTime,
       duree: '90',
     },
   })
@@ -88,7 +108,17 @@ export function CreateSessionDialog({
 
     // Calculer dateFin
     const dureeMinutes = parseInt(data.duree)
+    if (Number.isNaN(dureeMinutes) || dureeMinutes <= 0) {
+      toast.error('Veuillez saisir une durée valide.')
+      return
+    }
     const dateFinISO = new Date(dateDebutISO.getTime() + dureeMinutes * 60000)
+
+    const now = new Date()
+    if (dateDebutISO <= now) {
+      toast.error('Merci de choisir une date et une heure futures.')
+      return
+    }
 
     await createSession.mutateAsync({
       equipe_id: currentTeam.id,
