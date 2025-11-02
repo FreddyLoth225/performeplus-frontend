@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useTeamStore } from '@/lib/store/team-store'
 import { useDashboardJoueur } from '@/lib/hooks/use-dashboard'
+import { PlayerCharts } from '@/components/player/player-charts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Activity, Calendar, TrendingUp, AlertCircle, ArrowRight, Loader2 } from 'lucide-react'
@@ -164,8 +165,8 @@ export default function PlayerDashboard() {
       {/* Prochaine séance */}
       <Card>
         <CardHeader>
-          <CardTitle>Prochaine Séance</CardTitle>
-          <CardDescription>Votre prochain entraînement</CardDescription>
+          <CardTitle>Prochaines Séances</CardTitle>
+          <CardDescription>Vos prochains entraînements</CardDescription>
         </CardHeader>
         <CardContent>
           {upcomingSessions.length > 0 ? (
@@ -199,6 +200,15 @@ export default function PlayerDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Graphiques Évolution */}
+      {dashboard?.graphiques && (
+        <PlayerCharts
+          chargeData={dashboard.graphiques.evolution_charge || []}
+          indiceFormeData={dashboard.graphiques.evolution_indice_forme || []}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   )
 }

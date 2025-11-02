@@ -6,6 +6,7 @@ import { fr } from 'date-fns/locale'
 import { useTeamStore } from '@/lib/store/team-store'
 import { useDashboardStaff } from '@/lib/hooks/use-dashboard'
 import { useSessions } from '@/lib/hooks/use-sessions'
+import { TeamCharts } from '@/components/player/team-charts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Users, Calendar, Bell, TrendingUp, Plus, Loader2 } from 'lucide-react'
@@ -75,7 +76,10 @@ export default function StaffDashboard() {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Tableau de bord Staff</h1>
           <p className="text-slate-600 mt-1">{currentTeam?.nom}</p>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button 
+          className="w-full sm:w-auto"
+          onClick={() => window.location.href = '/dashboard/sessions'}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle Séance
         </Button>
@@ -199,19 +203,35 @@ export default function StaffDashboard() {
             <CardTitle>Actions Rapides</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 sm:space-y-3">
-            <Button className="w-full justify-start h-11" variant="outline">
+            <Button 
+              className="w-full justify-start h-11" 
+              variant="outline"
+              onClick={() => window.location.href = '/dashboard/sessions'}
+            >
               <Calendar className="mr-2 h-4 w-4" />
               Planifier Séance
             </Button>
-            <Button className="w-full justify-start h-11" variant="outline">
+            <Button 
+              className="w-full justify-start h-11" 
+              variant="outline"
+              onClick={() => window.location.href = '/dashboard/players'}
+            >
               <Users className="mr-2 h-4 w-4" />
               Voir Joueurs
             </Button>
-            <Button className="w-full justify-start h-11" variant="outline">
+            <Button 
+              className="w-full justify-start h-11" 
+              variant="outline"
+              onClick={() => window.location.href = '/dashboard/alerts'}
+            >
               <Bell className="mr-2 h-4 w-4" />
               Voir Alertes
             </Button>
-            <Button className="w-full justify-start h-11" variant="outline">
+            <Button 
+              className="w-full justify-start h-11" 
+              variant="outline"
+              disabled
+            >
               <TrendingUp className="mr-2 h-4 w-4" />
               Générer Rapport
             </Button>
@@ -260,6 +280,16 @@ export default function StaffDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Graphiques Équipe */}
+      {dashboard?.graphiques && (
+        <TeamCharts
+          chargeEquipeData={dashboard.graphiques.charge_equipe || []}
+          distributionRpe={dashboard.graphiques.distribution_rpe || {}}
+          indiceFormeMoyenData={dashboard.graphiques.indice_forme_moyen || []}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { useDashboardStaff } from '@/lib/hooks/use-dashboard'
 import { useSessions } from '@/lib/hooks/use-sessions'
 import { InvitePlayerDialog } from '@/components/players/invite-player-dialog'
 import { CreateSessionDialog } from '@/components/sessions/create-session-dialog'
+import { TeamCharts } from '@/components/player/team-charts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Users, Calendar, Bell, Settings, TrendingUp, Plus, Loader2 } from 'lucide-react'
@@ -209,8 +210,8 @@ export default function OwnerDashboard() {
                   router.push('/dashboard/players')
                 }}
               >
-                <TrendingUp className="h-6 w-6" />
-                <span>Analyser Charges</span>
+                <Users className="h-6 w-6" />
+                <span>Voir Joueurs</span>
               </Button>
               <Button
                 className="h-20 flex flex-col gap-2"
@@ -342,6 +343,15 @@ export default function OwnerDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Graphiques Équipe */}
+      {dashboard?.graphiques && (
+        <TeamCharts
+          chargeEquipeData={dashboard.graphiques.charge_equipe || []}
+          distributionRpe={dashboard.graphiques.distribution_rpe || {}}
+          indiceFormeMoyenData={dashboard.graphiques.indice_forme_moyen || []}
+        />
+      )}
 
       <InvitePlayerDialog
         open={inviteDialogOpen}
