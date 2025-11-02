@@ -32,8 +32,13 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Le backend RPE utilise 'seance_id' et 'participation_id'
+    const seanceId = session.seance_id || session.id
+    const participationId = session.participation_id
+
     create({
-      seance_id: session.id,
+      seance_id: seanceId,
+      participation_id: participationId,
       valeurRPE: values.valeurRPE,
       dureeReelle: values.dureeReelle,
       commentaire: values.commentaire || undefined,
@@ -45,10 +50,12 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {/* Durée réelle */}
       <div className="space-y-2">
-        <Label htmlFor="duree">Durée réelle de participation (minutes)</Label>
+        <Label htmlFor="duree" className="text-sm sm:text-base">
+          Durée réelle de participation (minutes)
+        </Label>
         <Input
           id="duree"
           type="number"
@@ -57,6 +64,7 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
           value={values.dureeReelle}
           onChange={(e) => setValues({ ...values, dureeReelle: Number(e.target.value) })}
           disabled={isCreating}
+          className="text-base"
         />
         <p className="text-xs text-slate-600">
           Combien de temps avez-vous réellement participé ?
@@ -65,7 +73,7 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
 
       {/* RPE */}
       <div className="space-y-3">
-        <Label>Perception de l'effort (RPE)</Label>
+        <Label className="text-sm sm:text-base">Perception de l'effort (RPE)</Label>
         <SliderWellness
           value={values.valeurRPE}
           onChange={(val) => setValues({ ...values, valeurRPE: val })}
@@ -76,8 +84,8 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
           disabled={isCreating}
         />
         <div className="bg-slate-50 p-3 rounded-lg">
-          <p className="text-xs text-slate-600 mb-1">Échelle d'effort perçu :</p>
-          <ul className="text-xs text-slate-600 space-y-1">
+          <p className="text-xs sm:text-sm text-slate-600 mb-1 font-medium">Échelle d'effort perçu :</p>
+          <ul className="text-xs sm:text-sm text-slate-600 space-y-0.5 sm:space-y-1">
             <li>• 0-2 : Très très léger</li>
             <li>• 3-4 : Léger</li>
             <li>• 5-6 : Modéré</li>
@@ -89,7 +97,9 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
 
       {/* Commentaire */}
       <div className="space-y-2">
-        <Label htmlFor="commentaire">Commentaire (optionnel)</Label>
+        <Label htmlFor="commentaire" className="text-sm sm:text-base">
+          Commentaire (optionnel)
+        </Label>
         <Textarea
           id="commentaire"
           placeholder="Ressenti, douleurs, observations..."
@@ -97,13 +107,14 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
           onChange={(e) => setValues({ ...values, commentaire: e.target.value })}
           disabled={isCreating}
           rows={3}
+          className="text-sm sm:text-base resize-none"
         />
       </div>
 
       {/* Charge calculée */}
-      <div className="bg-primary/10 p-4 rounded-lg">
-        <p className="text-sm text-slate-600">Charge d'entraînement calculée :</p>
-        <p className="text-3xl font-bold text-primary">{cej} UA</p>
+      <div className="bg-primary/10 p-3 sm:p-4 rounded-lg">
+        <p className="text-xs sm:text-sm text-slate-600 mb-1">Charge d'entraînement calculée :</p>
+        <p className="text-2xl sm:text-3xl font-bold text-primary">{cej} UA</p>
         <p className="text-xs text-slate-600 mt-1">
           {values.dureeReelle} min × {values.valeurRPE} RPE
         </p>
@@ -112,7 +123,7 @@ export function RPEForm({ session, onSuccess }: RPEFormProps) {
       {/* Bouton submit */}
       <Button
         type="submit"
-        className="w-full"
+        className="w-full h-11 sm:h-12 text-base"
         disabled={isCreating}
       >
         {isCreating ? (
