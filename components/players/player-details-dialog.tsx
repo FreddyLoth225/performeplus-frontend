@@ -108,7 +108,7 @@ export function PlayerDetailsDialog({ playerId, open, onOpenChange }: PlayerDeta
             <DialogHeader>
               <div className="flex items-start gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={player.utilisateur.photo} />
+                  <AvatarImage src={player.utilisateur.photo ?? undefined} />
                   <AvatarFallback className="bg-primary text-white text-xl">
                     {player.utilisateur.prenoms.charAt(0)}
                     {player.utilisateur.nom.charAt(0)}

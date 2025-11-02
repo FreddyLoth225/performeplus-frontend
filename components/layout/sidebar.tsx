@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  UserCircle,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -30,6 +31,12 @@ const getNavigationItems = (role: RoleEquipe | undefined) => {
       title: 'Tableau de bord',
       href: '/dashboard',
       icon: LayoutDashboard,
+      roles: ['PLAYER', 'STAFF', 'OWNER'],
+    },
+    {
+      title: 'Profil',
+      href: '/dashboard/profile',
+      icon: UserCircle,
       roles: ['PLAYER', 'STAFF', 'OWNER'],
     },
     {
@@ -180,7 +187,7 @@ export function Sidebar() {
       <div className="p-4 border-t border-slate-800">
         <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.photo} />
+            <AvatarImage src={user?.photo ?? undefined} />
             <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
           {!collapsed && (

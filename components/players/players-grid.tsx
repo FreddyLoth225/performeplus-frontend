@@ -74,7 +74,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
               {/* Header - Avatar + Infos */}
               <div className="flex items-start gap-3">
                 <Avatar className="h-14 w-14">
-                  <AvatarImage src={player.utilisateur.photo} />
+                  <AvatarImage src={player.utilisateur.photo ?? undefined} />
                   <AvatarFallback className="bg-primary text-white">
                     {initials}
                   </AvatarFallback>

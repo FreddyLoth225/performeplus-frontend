@@ -40,9 +40,9 @@ export interface Utilisateur {
   email: string
   nom: string
   prenoms: string
-  photo?: string
-  telephone?: string
-  whatsapp?: string
+  photo?: string | null
+  telephone?: string | null
+  whatsapp?: string | null
   langue: string
   fuseau_horaire: string
   rolePlateforme: RolePlateforme
@@ -132,7 +132,7 @@ export interface JoueurStats {
     nom: string
     prenoms: string
     email: string
-    photo?: string
+    photo?: string | null
   }
   profil: {
     dossard: number
