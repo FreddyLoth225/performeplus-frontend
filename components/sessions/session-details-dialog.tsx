@@ -113,9 +113,14 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[600px]">
           {isLoading ? (
-            <div className="flex items-center justify-center h-96">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
+            <>
+              <DialogHeader>
+                <DialogTitle>Chargement...</DialogTitle>
+              </DialogHeader>
+              <div className="flex items-center justify-center h-96">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            </>
           ) : session ? (
             <>
               <DialogHeader>
@@ -299,9 +304,14 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
               </div>
             </>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-600">Séance introuvable</p>
-            </div>
+            <>
+              <DialogHeader>
+                <DialogTitle>Séance introuvable</DialogTitle>
+              </DialogHeader>
+              <div className="text-center py-8">
+                <p className="text-slate-600">Cette séance n'existe pas ou a été supprimée.</p>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
