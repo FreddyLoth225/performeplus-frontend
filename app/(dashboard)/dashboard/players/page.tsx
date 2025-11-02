@@ -42,24 +42,25 @@ export default function PlayersPage() {
   const archivedPlayers = filteredPlayers?.filter((p) => p.profil.statut !== 'ACTIF') || []
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Joueurs</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Joueurs</h1>
+          <p className="text-slate-600 mt-1 text-sm sm:text-base">
             Gérez vos joueurs et suivez leurs performances
           </p>
         </div>
         <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter des joueurs
+                <span className="hidden sm:inline">Ajouter des joueurs</span>
+                <span className="sm:hidden">Ajouter</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => setInviteDialogOpen(true)}>
                 Inviter un joueur
               </DropdownMenuItem>
@@ -74,14 +75,14 @@ export default function PlayersPage() {
 
       {/* Barre de recherche */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="p-3 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Rechercher par nom ou dossard..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-11"
             />
           </div>
         </CardContent>
@@ -89,11 +90,11 @@ export default function PlayersPage() {
 
       {/* Tabs Actifs/Archivés */}
       <Tabs defaultValue="active" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="active">
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="active" className="flex-1 sm:flex-none">
             Actifs ({activePlayers.length})
           </TabsTrigger>
-          <TabsTrigger value="archived">
+          <TabsTrigger value="archived" className="flex-1 sm:flex-none">
             Archivés ({archivedPlayers.length})
           </TabsTrigger>
         </TabsList>

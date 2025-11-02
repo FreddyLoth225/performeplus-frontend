@@ -133,6 +133,31 @@ export interface SeanceActivite {
   exercice_reference?: string | null
 }
 
+export interface TemplateActivite {
+  id?: string
+  type: string
+  duree: number
+  intensite: number
+  objectif?: string | null
+  ordre: number
+}
+
+export interface TemplateSeance {
+  id: string
+  equipe: string
+  nom: string
+  description?: string
+  categorie?: string
+  duree_prevue: number
+  intensite_prevue: number
+  public: boolean
+  nombre_utilisations: number
+  date_creation: string
+  derniere_utilisation?: string | null
+  createur?: string | null
+  activites: TemplateActivite[]
+}
+
 export interface InterpretationIndiceForme {
   niveau: 'TRES_MAUVAIS' | 'MAUVAIS' | 'MOYEN' | 'BON' | 'EXCELLENT'
   couleur: 'red' | 'orange' | 'green'

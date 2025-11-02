@@ -29,16 +29,16 @@ export default function SessionsPage() {
   )
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Séances</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Séances</h1>
+          <p className="text-slate-600 mt-1 text-sm sm:text-base">
             Gérez toutes vos séances d'entraînement et matchs
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setCreateDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Nouvelle séance
         </Button>
@@ -49,11 +49,11 @@ export default function SessionsPage() {
 
       {/* Tabs par statut */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">Toutes</TabsTrigger>
-          <TabsTrigger value="PLANIFIEE">Planifiées</TabsTrigger>
-          <TabsTrigger value="TERMINEE">Terminées</TabsTrigger>
-          <TabsTrigger value="ANNULEE">Annulées</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 sm:w-auto">
+          <TabsTrigger value="all" className="text-xs sm:text-sm">Toutes</TabsTrigger>
+          <TabsTrigger value="PLANIFIEE" className="text-xs sm:text-sm">Planifiées</TabsTrigger>
+          <TabsTrigger value="TERMINEE" className="text-xs sm:text-sm">Terminées</TabsTrigger>
+          <TabsTrigger value="ANNULEE" className="text-xs sm:text-sm">Annulées</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">

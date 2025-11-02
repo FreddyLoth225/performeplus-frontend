@@ -58,7 +58,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
       {players.map((player) => {
         const initials = `${player.utilisateur.prenoms.charAt(0)}${player.utilisateur.nom.charAt(0)}`.toUpperCase()
         const rcaStatus = getRCAStatus(player.stats.indicateurs.rca)
@@ -67,20 +67,20 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
         return (
           <Card
             key={player.id}
-            className="hover:shadow-lg transition-shadow cursor-pointer"
+            className="hover:shadow-lg transition-shadow cursor-pointer active:scale-98"
             onClick={() => onSelectPlayer(player.id)}
           >
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {/* Header - Avatar + Infos */}
               <div className="flex items-start gap-3">
-                <Avatar className="h-14 w-14">
+                <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
                   <AvatarImage src={player.utilisateur.photo ?? undefined} />
-                  <AvatarFallback className="bg-primary text-white">
+                  <AvatarFallback className="bg-primary text-white text-sm sm:text-base">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-900 truncate">
+                  <h3 className="font-semibold text-sm sm:text-base text-slate-900 truncate">
                     {player.utilisateur.prenoms} {player.utilisateur.nom}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
@@ -90,7 +90,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
                     >
                       {posteLabels[player.profil.poste]}
                     </Badge>
-                    <span className="text-sm text-slate-600">
+                    <span className="text-xs sm:text-sm text-slate-600">
                       #{player.profil.dossard}
                     </span>
                   </div>
@@ -100,7 +100,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
               {/* Indicateurs */}
               <div className="space-y-2">
                 {/* Indice de forme */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-slate-600">Forme</span>
                   <div className="flex items-center gap-1">
                     <Activity className="h-3 w-3 text-slate-400" />
@@ -111,7 +111,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
                 </div>
 
                 {/* RCA */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-slate-600">RCA</span>
                   <div className={cn('flex items-center gap-1', rcaStatus.color)}>
                     <RCAIcon className="h-3 w-3" />
@@ -122,7 +122,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
                 </div>
 
                 {/* Nombre de séances */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-slate-600">Séances (7j)</span>
                   <span className="font-medium">
                     {player.stats.nombreSeances}
@@ -132,7 +132,7 @@ export function PlayersGrid({ players, onSelectPlayer }: PlayersGridProps) {
 
               {/* Statut */}
               {player.profil.statut !== 'ACTIF' && (
-                <Badge variant="secondary" className="w-full justify-center">
+                <Badge variant="secondary" className="w-full justify-center text-xs">
                   {statutLabels[player.profil.statut]}
                 </Badge>
               )}

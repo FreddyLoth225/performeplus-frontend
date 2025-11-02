@@ -68,21 +68,21 @@ export default function StaffDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tableau de bord Staff</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Tableau de bord Staff</h1>
           <p className="text-slate-600 mt-1">{currentTeam?.nom}</p>
         </div>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nouvelle Séance
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
@@ -149,7 +149,7 @@ export default function StaffDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Alertes */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -158,13 +158,13 @@ export default function StaffDashboard() {
           </CardHeader>
           <CardContent>
             {urgentAlerts.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {urgentAlerts.map((alerte) => (
                   <div
                     key={alerte.id}
-                    className="border rounded-lg p-4 flex flex-col gap-1"
+                    className="border rounded-lg p-3 sm:p-4 flex flex-col gap-1"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start sm:items-center justify-between gap-2">
                       <span className="text-sm font-medium text-slate-900">
                         {alerte.message}
                       </span>
@@ -198,20 +198,20 @@ export default function StaffDashboard() {
           <CardHeader>
             <CardTitle>Actions Rapides</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
+          <CardContent className="space-y-2 sm:space-y-3">
+            <Button className="w-full justify-start h-11" variant="outline">
               <Calendar className="mr-2 h-4 w-4" />
               Planifier Séance
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start h-11" variant="outline">
               <Users className="mr-2 h-4 w-4" />
               Voir Joueurs
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start h-11" variant="outline">
               <Bell className="mr-2 h-4 w-4" />
               Voir Alertes
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start h-11" variant="outline">
               <TrendingUp className="mr-2 h-4 w-4" />
               Générer Rapport
             </Button>
