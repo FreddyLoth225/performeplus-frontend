@@ -102,11 +102,35 @@ export interface Seance {
   type: 'ENTRAINEMENT' | 'MATCH' | 'RECUPERATION' | 'AUTRE'
   dateDebut: string
   dateFin?: string
+  dureePrevue?: number | null
+  intensitePrevue?: number | null
+  chargePrevue?: number | null
   lieu?: string
   description?: string
   statut: StatutSeance
   createur?: string
   parametres?: Record<string, any>
+  participants?: SeanceParticipant[]
+  activites?: SeanceActivite[]
+}
+
+export interface SeanceParticipant {
+  id: string
+  utilisateur_id: string
+  nom: string
+  prenoms: string
+  email: string
+  present: boolean
+}
+
+export interface SeanceActivite {
+  id?: string
+  type: string
+  duree?: number | null
+  intensite?: number | null
+  objectif?: string | null
+  ordre?: number | null
+  exercice_reference?: string | null
 }
 
 export interface InterpretationIndiceForme {

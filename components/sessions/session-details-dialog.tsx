@@ -23,8 +23,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useSession, useUpdateSession, useDeleteSession, useDuplicateSession } from '@/lib/hooks/use-sessions'
-import { Loader2, Calendar, MapPin, Clock, Edit, Trash2, Copy, X } from 'lucide-react'
+import { Loader2, Calendar, MapPin, Clock, Trash2, Copy, X, Timer, Gauge, Users, List } from 'lucide-react'
 import { useState } from 'react'
+import { DuplicateSeancePayload, ForceUpdateError } from '@/lib/api/session.service'
 
 interface SessionDetailsDialogProps {
   seanceId: string | null
@@ -63,21 +64,46 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
   const handleDuplicate = async () => {
     if (!session) return
     // Dupliquer pour demain à la même heure
-    const tomorrow = new Date(session.dateDebut)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    const newStart = new Date(session.dateDebut)
+    newStart.setDate(newStart.getDate() + 1)
+    const payload: DuplicateSeancePayload = {
+      dateDebut: newStart.toISOString(),
+    }
+    if (session.dateFin) {
+      const durationMs = new Date(session.dateFin).getTime() - new Date(session.dateDebut).getTime()
+      const newEnd = new Date(newStart.getTime() + durationMs)
+      payload.dateFin = newEnd.toISOString()
+    }
     await duplicateSession.mutateAsync({
       seanceId: session.id,
-      newDate: tomorrow.toISOString(),
+      payload,
     })
     onOpenChange(false)
   }
 
   const handleCancel = async () => {
     if (!session) return
-    await updateSession.mutateAsync({
-      seanceId: session.id,
-      data: { statut: 'ANNULEE' },
-    })
+    const motif = window.prompt('Motif de l’annulation (optionnel) ?') || undefined
+
+    try {
+      await updateSession.mutateAsync({
+        seanceId: session.id,
+        data: { statut: 'ANNULEE', motifAnnulation: motif },
+      })
+    } catch (error) {
+      if (error instanceof ForceUpdateError) {
+        const shouldForce = window.confirm(
+          `${error.message}\nSouhaitez-vous forcer la mise à jour malgré les RPE saisis ?`
+        )
+        if (shouldForce) {
+          await updateSession.mutateAsync({
+            seanceId: session.id,
+            data: { statut: 'ANNULEE', motifAnnulation: motif },
+            forceUpdate: true,
+          })
+        }
+      }
+    }
   }
 
   if (!open || !seanceId) return null
@@ -124,6 +150,26 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
                     </div>
                   </div>
 
+                  {session.dureePrevue && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Timer className="h-5 w-5 text-slate-500" />
+                      <div>
+                        <p className="font-medium">Durée prévue</p>
+                        <p className="text-slate-600">{session.dureePrevue} minutes</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {typeof session.intensitePrevue === 'number' && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Gauge className="h-5 w-5 text-slate-500" />
+                      <div>
+                        <p className="font-medium">Intensité prévue</p>
+                        <p className="text-slate-600">{session.intensitePrevue} / 10</p>
+                      </div>
+                    </div>
+                  )}
+
                   {session.lieu && (
                     <div className="flex items-center gap-3 text-sm">
                       <MapPin className="h-5 w-5 text-slate-500" />
@@ -148,6 +194,65 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
                 </div>
 
                 <Separator />
+
+                {session.participants && session.participants.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <Users className="h-4 w-4" />
+                      Participants ({session.participants.length})
+                    </div>
+                    <div className="space-y-2">
+                      {session.participants.map((participant) => (
+                        <div
+                          key={participant.id}
+                          className="flex items-center justify-between rounded-md border p-2 text-sm text-slate-600"
+                        >
+                          <div>
+                            <p className="font-medium text-slate-800">
+                              {participant.prenoms} {participant.nom}
+                            </p>
+                            <p className="text-xs text-slate-500">{participant.email}</p>
+                          </div>
+                          {participant.present && (
+                            <span className="text-xs font-medium text-green-600">Présent</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {session.activites && session.activites.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <List className="h-4 w-4" />
+                      Activités prévues
+                    </div>
+                    <div className="space-y-2">
+                      {session.activites.map((activite) => (
+                        <div key={`${activite.ordre}-${activite.type}`} className="rounded-md border p-3">
+                          <div className="flex items-center justify-between text-sm text-slate-700">
+                            <span className="font-medium">
+                              {activite.ordre ? `${activite.ordre}. ` : ''}
+                              {activite.type}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {activite.duree ? `${activite.duree} min` : 'Durée N/C'}
+                              {typeof activite.intensite === 'number'
+                                ? ` • Intensité ${activite.intensite}`
+                                : ''}
+                            </span>
+                          </div>
+                          {activite.objectif && (
+                            <p className="mt-2 text-sm text-slate-600">{activite.objectif}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(session.participants?.length || session.activites?.length) && <Separator />}
 
                 {/* Actions */}
                 <div className="flex gap-2 flex-wrap">

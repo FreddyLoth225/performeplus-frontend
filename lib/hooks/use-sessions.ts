@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { sessionService, CreateSeanceData, UpdateSeanceData } from '../api/session.service'
+import {
+  sessionService,
+  CreateSeanceData,
+  UpdateSeanceData,
+  SeanceMutationResponse,
+  ForceUpdateError,
+  DuplicateSeancePayload,
+} from '../api/session.service'
 import { toast } from 'sonner'
 
 // ✅ HOOKS POUR RÉCUPÉRER LES DONNÉES (comme avant)
@@ -8,10 +15,15 @@ export function useSessions(equipeId: string, params?: {
   date_debut?: string
   date_fin?: string
   statut?: string
+  type?: string
+  joueur_id?: string
 }) {
   return useQuery({
     queryKey: ['sessions', equipeId, params],
-    queryFn: () => sessionService.getSessions(equipeId, params),
+    queryFn: async () => {
+      const result = await sessionService.getSessions(equipeId, params)
+      return result.seances
+    },
     enabled: !!equipeId,
   })
 }
@@ -19,7 +31,7 @@ export function useSessions(equipeId: string, params?: {
 export function useSession(seanceId: string | null) {
   return useQuery({
     queryKey: ['session', seanceId],
-    queryFn: () => sessionService.getSessionDetails(seanceId!),
+    queryFn: async () => sessionService.getSessionDetails(seanceId!),
     enabled: !!seanceId,
   })
 }
@@ -39,10 +51,11 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: (data: CreateSeanceData) => sessionService.createSession(data),
-    onSuccess: () => {
+    onSuccess: (response: SeanceMutationResponse) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
-      toast.success('Séance créée avec succès')
+      toast.success(response.message || 'Séance créée avec succès')
+      response.warnings?.forEach((warning) => toast.info(warning))
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Erreur lors de la création'
@@ -55,17 +68,29 @@ export function useUpdateSession() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ seanceId, data }: { seanceId: string; data: UpdateSeanceData }) =>
-      sessionService.updateSession(seanceId, data),
-    onSuccess: (_, variables) => {
+    mutationFn: ({
+      seanceId,
+      data,
+      forceUpdate,
+    }: {
+      seanceId: string
+      data: UpdateSeanceData
+      forceUpdate?: boolean
+    }) => sessionService.updateSession(seanceId, data, { forceUpdate }),
+    onSuccess: (response: SeanceMutationResponse, variables) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
       queryClient.invalidateQueries({ queryKey: ['session', variables.seanceId] })
-      toast.success('Séance mise à jour')
+      toast.success(response.message || 'Séance mise à jour')
+      response.warnings?.forEach((warning) => toast.info(warning))
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || 'Erreur lors de la mise à jour'
-      toast.error(message)
+      if (error instanceof ForceUpdateError) {
+        toast.info(error.message)
+      } else {
+        const message = error.response?.data?.message || 'Erreur lors de la mise à jour'
+        toast.error(message)
+      }
     },
   })
 }
@@ -91,12 +116,18 @@ export function useDuplicateSession() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ seanceId, newDate }: { seanceId: string; newDate: string }) =>
-      sessionService.duplicateSession(seanceId, newDate),
-    onSuccess: () => {
+    mutationFn: ({
+      seanceId,
+      payload,
+    }: {
+      seanceId: string
+      payload?: DuplicateSeancePayload
+    }) => sessionService.duplicateSession(seanceId, payload),
+    onSuccess: (response: SeanceMutationResponse) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] })
       queryClient.invalidateQueries({ queryKey: ['calendar'] })
-      toast.success('Séance dupliquée')
+      toast.success(response.message || 'Séance dupliquée')
+      response.warnings?.forEach((warning) => toast.info(warning))
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Erreur lors de la duplication'

@@ -16,3 +16,11 @@ export function useTeamDetails(equipeId: string | undefined) {
     enabled: !!equipeId,
   })
 }
+
+export function useTeamMembers(equipeId: string | undefined) {
+  return useQuery({
+    queryKey: ['team-members', equipeId],
+    queryFn: () => teamService.getTeamMembers(equipeId!),
+    enabled: !!equipeId,
+  })
+}

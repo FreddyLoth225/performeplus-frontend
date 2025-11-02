@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -29,7 +29,9 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useCreateSession } from '@/lib/hooks/use-sessions'
 import { useTeamStore } from '@/lib/store/team-store'
-import { CalendarIcon, Loader2 } from 'lucide-react'
+import { useTeamMembers } from '@/lib/hooks/use-teams'
+import { Checkbox } from '@/components/ui/checkbox'
+import { CalendarIcon, Loader2, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -54,6 +56,17 @@ const sessionSchema = z.object({
   dateDebut: z.date(),
   heureDebut: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM'),
   duree: z.string().min(1, 'Durée requise'),
+  intensite: z
+    .string()
+    .optional()
+    .refine(
+      (value) =>
+        !value || (!Number.isNaN(Number(value)) && Number(value) >= 0 && Number(value) <= 10),
+      {
+        message: 'Intensité entre 0 et 10',
+      }
+    ),
+  participants: z.array(z.string()).min(1, 'Sélectionnez au moins un participant'),
   lieu: z.string().optional(),
   description: z.string().optional(),
 })
@@ -74,6 +87,10 @@ export function CreateSessionDialog({
   const { currentTeam } = useTeamStore()
   const createSession = useCreateSession()
   const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const { data: membersResponse, isLoading: isMembersLoading } = useTeamMembers(currentTeam?.id)
+
+  const members = membersResponse?.membres ?? []
+  const membersCount = members.length
 
   const initialDate = useMemo(() => defaultDate || new Date(), [defaultDate])
   const defaultTime = useMemo(() => getDefaultTime(initialDate), [initialDate])
@@ -92,14 +109,23 @@ export function CreateSessionDialog({
       dateDebut: initialDate,
       heureDebut: defaultTime,
       duree: '90',
+      participants: [],
+      intensite: '',
     },
   })
 
   const dateDebut = watch('dateDebut')
   const typeSeance = watch('type')
+  const participants = watch('participants') ?? []
+  const participantsCount = participants.length
 
   const onSubmit = async (data: SessionFormData) => {
     if (!currentTeam) return
+
+    if (!data.participants || data.participants.length === 0) {
+      toast.error('Merci de sélectionner au moins un participant.')
+      return
+    }
 
     // Combiner date + heure
     const [heures, minutes] = data.heureDebut.split(':').map(Number)
@@ -120,17 +146,82 @@ export function CreateSessionDialog({
       return
     }
 
-    await createSession.mutateAsync({
+    const intensitePrevue = data.intensite?.length ? Number(data.intensite) : undefined
+
+    try {
+      await createSession.mutateAsync({
       equipe_id: currentTeam.id,
       type: data.type,
       dateDebut: dateDebutISO.toISOString(),
       dateFin: dateFinISO.toISOString(),
+        dureePrevue: dureeMinutes,
+        intensitePrevue,
       lieu: data.lieu,
       description: data.description,
-    })
+        participants_ids: data.participants,
+      })
 
-    reset()
+      reset()
+      onOpenChange(false)
+    } catch (error) {
+      // Les toasts sont gérés par le hook
+    }
+  }
+
+  const handleParticipantToggle = (memberId: string, checked: boolean | 'indeterminate') => {
+    const safeChecked = checked === 'indeterminate' ? false : checked
+  const currentSelection = new Set(participants)
+    if (safeChecked) {
+      currentSelection.add(memberId)
+    } else {
+      currentSelection.delete(memberId)
+    }
+    setValue('participants', Array.from(currentSelection))
+  }
+
+  useEffect(() => {
+    if (open && membersCount > 0 && participantsCount === 0) {
+      let defaultParticipants = members
+        .filter((member) => member.role === 'PLAYER')
+        .map((member) => member.id)
+
+      if (!defaultParticipants.length) {
+        defaultParticipants = members.map((member) => member.id)
+      }
+
+      if (defaultParticipants.length) {
+        setValue('participants', defaultParticipants)
+      }
+    }
+  }, [open, members, membersCount, participantsCount, setValue])
+
+  useEffect(() => {
+    if (!open) {
+      reset({
+        type: 'ENTRAINEMENT',
+        dateDebut: initialDate,
+        heureDebut: defaultTime,
+        duree: '90',
+        participants: [],
+        intensite: '',
+        lieu: undefined,
+        description: undefined,
+      })
+    }
+  }, [open, reset, initialDate, defaultTime])
+
+  const handleClose = () => {
     onOpenChange(false)
+    reset({
+      type: 'ENTRAINEMENT',
+      dateDebut: initialDate,
+      heureDebut: defaultTime,
+      duree: '90',
+      participants: [],
+      intensite: '',
+      lieu: undefined,
+      description: undefined,
+    })
   }
 
   return (
@@ -235,6 +326,23 @@ export function CreateSessionDialog({
             </div>
           </div>
 
+          {/* Intensité */}
+          <div className="space-y-2">
+            <Label htmlFor="intensite">Intensité prévue (0-10)</Label>
+            <Input
+              id="intensite"
+              type="number"
+              step="0.5"
+              min="0"
+              max="10"
+              {...register('intensite')}
+              placeholder="4"
+            />
+            {errors.intensite && (
+              <p className="text-sm text-red-600">{errors.intensite.message}</p>
+            )}
+          </div>
+
           {/* Lieu */}
           <div className="space-y-2">
             <Label htmlFor="lieu">Lieu</Label>
@@ -256,11 +364,52 @@ export function CreateSessionDialog({
             />
           </div>
 
+          {/* Participants */}
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-slate-500" /> Participants *
+            </Label>
+            <div className="rounded-md border p-3 max-h-48 overflow-y-auto space-y-2">
+              {isMembersLoading ? (
+                <p className="text-sm text-slate-500">Chargement des membres...</p>
+              ) : members.length ? (
+                members.map((member) => {
+                  const checked = participants?.includes(member.id) ?? false
+                  return (
+                    <label
+                      key={member.id}
+                      className="flex items-center justify-between gap-3 text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => handleParticipantToggle(member.id, value)}
+                        />
+                        <div>
+                          <p className="font-medium text-slate-800">{member.nom}</p>
+                          <p className="text-xs text-slate-500">{member.email}</p>
+                        </div>
+                      </div>
+                      {member.profil_joueur?.dossard !== undefined && (
+                        <span className="text-xs text-slate-500">#{member.profil_joueur.dossard}</span>
+                      )}
+                    </label>
+                  )
+                })
+              ) : (
+                <p className="text-sm text-slate-500">Aucun membre actif à proposer.</p>
+              )}
+            </div>
+            {errors.participants && (
+              <p className="text-sm text-red-600">{errors.participants.message}</p>
+            )}
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
               disabled={createSession.isPending}
             >
               Annuler
