@@ -22,8 +22,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { useSession, useUpdateSession, useDeleteSession, useDuplicateSession } from '@/lib/hooks/use-sessions'
-import { Loader2, Calendar, MapPin, Clock, Trash2, Copy, X, Timer, Gauge, Users, List } from 'lucide-react'
+import { useSession, useUpdateSession, useDeleteSession, useDuplicateSession, useChangeSessionStatus } from '@/lib/hooks/use-sessions'
+import { Loader2, Calendar, MapPin, Clock, Trash2, Copy, X, Timer, Gauge, Users, List, CheckCircle2, PlayCircle } from 'lucide-react'
 import { useState } from 'react'
 import { DuplicateSeancePayload, ForceUpdateError } from '@/lib/api/session.service'
 
@@ -52,6 +52,7 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
   const updateSession = useUpdateSession()
   const deleteSession = useDeleteSession()
   const duplicateSession = useDuplicateSession()
+  const changeStatus = useChangeSessionStatus()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const handleDelete = async () => {
@@ -261,6 +262,40 @@ export function SessionDetailsDialog({ seanceId, open, onOpenChange }: SessionDe
 
                 {/* Actions */}
                 <div className="flex gap-2 flex-wrap">
+                  {/* Boutons de changement de statut */}
+                  {session.statut === 'PLANIFIEE' && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => changeStatus.mutate({ seanceId: session.id, statut: 'EN_COURS' })}
+                      disabled={changeStatus.isPending}
+                    >
+                      {changeStatus.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                      )}
+                      Commencer
+                    </Button>
+                  )}
+
+                  {(session.statut === 'PLANIFIEE' || session.statut === 'EN_COURS') && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => changeStatus.mutate({ seanceId: session.id, statut: 'TERMINEE' })}
+                      disabled={changeStatus.isPending}
+                    >
+                      {changeStatus.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                      )}
+                      Terminer
+                    </Button>
+                  )}
+
                   <Button
                     variant="outline"
                     size="sm"

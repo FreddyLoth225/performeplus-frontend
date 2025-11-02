@@ -126,4 +126,12 @@ export const sessionService = {
     const response = await apiClient.post(`/seances/${seanceId}/convert-to-template/`, payload)
     return response.data
   },
+
+  async changeSessionStatus(
+    seanceId: string,
+    statut: 'PLANIFIEE' | 'EN_COURS' | 'TERMINEE' | 'ANNULEE'
+  ): Promise<{ message: string; ancien_statut: string; nouveau_statut: string; seance: Seance }> {
+    const response = await apiClient.patch(`/seances/${seanceId}/statut/`, { statut })
+    return response.data
+  },
 }

@@ -58,7 +58,31 @@ export function useCreateSession() {
       response.warnings?.forEach((warning) => toast.info(warning))
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || 'Erreur lors de la création'
+      const message = error.response?.data?.message || 'Erreur lors de la duplication'
+      toast.error(message)
+    },
+  })
+}
+
+export function useChangeSessionStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      seanceId,
+      statut,
+    }: {
+      seanceId: string
+      statut: 'PLANIFIEE' | 'EN_COURS' | 'TERMINEE' | 'ANNULEE'
+    }) => sessionService.changeSessionStatus(seanceId, statut),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      queryClient.invalidateQueries({ queryKey: ['calendar'] })
+      queryClient.invalidateQueries({ queryKey: ['session', response.seance.id] })
+      toast.success(response.message || 'Statut modifié')
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.error || 'Erreur lors du changement de statut'
       toast.error(message)
     },
   })
