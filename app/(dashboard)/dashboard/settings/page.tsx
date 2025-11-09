@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTeamStore } from '@/lib/store/team-store'
-import { useTeamDetails } from '@/lib/hooks/use-teams'
+import { useTeamDetails, useUpdateTeam, useTeamThresholds, useUpdateThresholds } from '@/lib/hooks/use-teams'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,10 +23,24 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+type TabValue = 'general' | 'thresholds' | 'staff' | 'notifications' | 'advanced'
+
 export default function SettingsPage() {
   const { currentTeam } = useTeamStore()
   const { data: teamDetails, isLoading } = useTeamDetails(currentTeam?.id)
-  const [isSaving, setIsSaving] = useState(false)
+  const { data: thresholdsData } = useTeamThresholds(currentTeam?.id)
+  const updateTeam = useUpdateTeam()
+  const updateThresholds = useUpdateThresholds()
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState<TabValue>('general')
+
+  // Gérer l'onglet depuis l'URL
+  useEffect(() => {
+    const tab = searchParams.get('tab') as TabValue
+    if (tab && ['general', 'thresholds', 'staff', 'notifications', 'advanced'].includes(tab)) {
+      setActiveTab(tab)
+    }
+  }, [searchParams])
 
   // États pour les différents paramètres
   const [teamInfo, setTeamInfo] = useState({
@@ -33,6 +48,17 @@ export default function SettingsPage() {
     sport: currentTeam?.sport || '',
     pays: currentTeam?.pays || '',
   })
+
+  // Mettre à jour teamInfo quand currentTeam change
+  useEffect(() => {
+    if (currentTeam) {
+      setTeamInfo({
+        nom: currentTeam.nom,
+        sport: currentTeam.sport,
+        pays: currentTeam.pays,
+      })
+    }
+  }, [currentTeam])
 
   const [thresholds, setThresholds] = useState({
     rpe_critique: 9,
@@ -45,6 +71,22 @@ export default function SettingsPage() {
     monotonie_warning: 2.0,
   })
 
+  // Mettre à jour les seuils quand les données sont chargées
+  useEffect(() => {
+    if (thresholdsData) {
+      setThresholds({
+        rpe_critique: thresholdsData.rpe_critique ?? 9,
+        rpe_warning: thresholdsData.rpe_warning ?? 7,
+        charge_critique: thresholdsData.charge_critique ?? 5000,
+        charge_warning: thresholdsData.charge_warning ?? 4000,
+        acwr_critique: thresholdsData.acwr_critique ?? 1.5,
+        acwr_warning: thresholdsData.acwr_warning ?? 1.3,
+        monotonie_critique: thresholdsData.monotonie_critique ?? 2.5,
+        monotonie_warning: thresholdsData.monotonie_warning ?? 2.0,
+      })
+    }
+  }, [thresholdsData])
+
   const [notifications, setNotifications] = useState({
     alertes_email: true,
     alertes_push: false,
@@ -53,42 +95,24 @@ export default function SettingsPage() {
   })
 
   const handleSaveTeamInfo = async () => {
-    setIsSaving(true)
-    try {
-      // TODO: Implémenter l'appel API pour mettre à jour les infos de l'équipe
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      toast.success('Informations de l\'équipe mises à jour')
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
-    } finally {
-      setIsSaving(false)
-    }
+    if (!currentTeam?.id) return
+    updateTeam.mutate({
+      equipeId: currentTeam.id,
+      data: teamInfo,
+    })
   }
 
   const handleSaveThresholds = async () => {
-    setIsSaving(true)
-    try {
-      // TODO: Implémenter l'appel API pour mettre à jour les seuils
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      toast.success('Seuils personnalisés sauvegardés')
-    } catch (error) {
-      toast.error('Erreur lors de la sauvegarde')
-    } finally {
-      setIsSaving(false)
-    }
+    if (!currentTeam?.id) return
+    updateThresholds.mutate({
+      equipeId: currentTeam.id,
+      data: thresholds,
+    })
   }
 
   const handleSaveNotifications = async () => {
-    setIsSaving(true)
-    try {
-      // TODO: Implémenter l'appel API pour mettre à jour les notifications
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      toast.success('Préférences de notifications mises à jour')
-    } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
-    } finally {
-      setIsSaving(false)
-    }
+    // TODO: Implémenter l'appel API pour mettre à jour les notifications
+    toast.info('Fonctionnalité à venir')
   }
 
   if (isLoading) {
@@ -109,7 +133,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
           <TabsTrigger value="general" className="text-xs sm:text-sm">
             <Settings className="h-4 w-4 mr-2 hidden sm:inline" />
@@ -178,8 +202,8 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveTeamInfo} disabled={isSaving}>
-                  {isSaving ? (
+                <Button onClick={handleSaveTeamInfo} disabled={updateTeam.isPending}>
+                  {updateTeam.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Enregistrement...
@@ -392,8 +416,8 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveThresholds} disabled={isSaving}>
-                  {isSaving ? (
+                <Button onClick={handleSaveThresholds} disabled={updateThresholds.isPending}>
+                  {updateThresholds.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Enregistrement...
@@ -524,18 +548,9 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveNotifications} disabled={isSaving}>
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enregistrement...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Enregistrer
-                    </>
-                  )}
+                <Button onClick={handleSaveNotifications} disabled={false}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Enregistrer
                 </Button>
               </div>
             </CardContent>

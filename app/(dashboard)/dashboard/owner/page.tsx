@@ -219,7 +219,10 @@ export default function OwnerDashboard() {
               <Button
                 className="h-20 flex flex-col gap-2"
                 variant="outline"
-                onClick={() => toast.info('Le paramétrage des seuils sera bientôt disponible.')}
+                onClick={() => {
+                  if (!ensureTeamSelected()) return
+                  router.push('/dashboard/settings?tab=thresholds')
+                }}
               >
                 <Settings className="h-6 w-6" />
                 <span>Configurer Seuils</span>
