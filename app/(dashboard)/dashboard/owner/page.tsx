@@ -88,7 +88,10 @@ export default function OwnerDashboard() {
         <div className="flex gap-3">
           <Button
             variant="outline"
-            onClick={() => toast.info('Les paramètres d’équipe arrivent bientôt.')}
+            onClick={() => {
+              if (!ensureTeamSelected()) return
+              router.push('/dashboard/settings')
+            }}
           >
             <Settings className="mr-2 h-4 w-4" />
             Paramètres
