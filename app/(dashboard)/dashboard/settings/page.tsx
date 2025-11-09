@@ -3,14 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTeamStore } from '@/lib/store/team-store'
-import { useTeamDetails, useUpdateTeam, useTeamThresholds, useUpdateThresholds } from '@/lib/hooks/use-teams'
+import { 
+  useTeamDetails, 
+  useUpdateTeam, 
+  useTeamThresholds,
+  useCreateThreshold,
+  useUpdateThreshold,
+  useDeleteThreshold
+} from '@/lib/hooks/use-teams'
+import { SeuilPersonnalise } from '@/lib/api/team.service'
+import { ThresholdCard } from '@/components/settings/threshold-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
 import {
   Settings,
   Users,
@@ -28,9 +36,11 @@ type TabValue = 'general' | 'thresholds' | 'staff' | 'notifications' | 'advanced
 export default function SettingsPage() {
   const { currentTeam } = useTeamStore()
   const { data: teamDetails, isLoading } = useTeamDetails(currentTeam?.id)
-  const { data: thresholdsData } = useTeamThresholds(currentTeam?.id)
+  const { data: thresholdsList, isLoading: isLoadingThresholds } = useTeamThresholds(currentTeam?.id)
   const updateTeam = useUpdateTeam()
-  const updateThresholds = useUpdateThresholds()
+  const createThreshold = useCreateThreshold()
+  const updateThreshold = useUpdateThreshold()
+  const deleteThreshold = useDeleteThreshold()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabValue>('general')
 
@@ -42,14 +52,13 @@ export default function SettingsPage() {
     }
   }, [searchParams])
 
-  // États pour les différents paramètres
+  // États pour les paramètres généraux
   const [teamInfo, setTeamInfo] = useState({
     nom: currentTeam?.nom || '',
     sport: currentTeam?.sport || '',
     pays: currentTeam?.pays || '',
   })
 
-  // Mettre à jour teamInfo quand currentTeam change
   useEffect(() => {
     if (currentTeam) {
       setTeamInfo({
@@ -59,33 +68,6 @@ export default function SettingsPage() {
       })
     }
   }, [currentTeam])
-
-  const [thresholds, setThresholds] = useState({
-    rpe_critique: 9,
-    rpe_warning: 7,
-    charge_critique: 5000,
-    charge_warning: 4000,
-    acwr_critique: 1.5,
-    acwr_warning: 1.3,
-    monotonie_critique: 2.5,
-    monotonie_warning: 2.0,
-  })
-
-  // Mettre à jour les seuils quand les données sont chargées
-  useEffect(() => {
-    if (thresholdsData) {
-      setThresholds({
-        rpe_critique: thresholdsData.rpe_critique ?? 9,
-        rpe_warning: thresholdsData.rpe_warning ?? 7,
-        charge_critique: thresholdsData.charge_critique ?? 5000,
-        charge_warning: thresholdsData.charge_warning ?? 4000,
-        acwr_critique: thresholdsData.acwr_critique ?? 1.5,
-        acwr_warning: thresholdsData.acwr_warning ?? 1.3,
-        monotonie_critique: thresholdsData.monotonie_critique ?? 2.5,
-        monotonie_warning: thresholdsData.monotonie_warning ?? 2.0,
-      })
-    }
-  }, [thresholdsData])
 
   const [notifications, setNotifications] = useState({
     alertes_email: true,
@@ -102,17 +84,52 @@ export default function SettingsPage() {
     })
   }
 
-  const handleSaveThresholds = async () => {
-    if (!currentTeam?.id) return
-    updateThresholds.mutate({
-      equipeId: currentTeam.id,
-      data: thresholds,
-    })
+  const handleSaveNotifications = async () => {
+    toast.info('Fonctionnalité à venir')
   }
 
-  const handleSaveNotifications = async () => {
-    // TODO: Implémenter l'appel API pour mettre à jour les notifications
-    toast.info('Fonctionnalité à venir')
+  const handleSaveThreshold = (data: Partial<SeuilPersonnalise>) => {
+    if (!currentTeam?.id) return
+    
+    const existingThreshold = Array.isArray(thresholdsList) 
+      ? thresholdsList.find(t => t.type === data.type)
+      : null
+    
+    if (existingThreshold) {
+      // Mise à jour
+      updateThreshold.mutate({
+        seuilId: existingThreshold.id!,
+        data,
+      })
+    } else {
+      // Création
+      createThreshold.mutate({
+        equipe: currentTeam.id,
+        type: data.type!,
+        valeur_min: data.valeur_min ?? null,
+        valeur_max: data.valeur_max ?? null,
+        valeur_critique: data.valeur_critique ?? null,
+        actif: data.actif ?? true,
+        commentaire: data.commentaire ?? '',
+      })
+    }
+  }
+
+  const handleDeleteThreshold = (type: SeuilPersonnalise['type']) => {
+    if (!currentTeam?.id || !Array.isArray(thresholdsList)) return
+    
+    const threshold = thresholdsList.find(t => t.type === type)
+    if (threshold) {
+      deleteThreshold.mutate({
+        seuilId: threshold.id!,
+        equipeId: currentTeam.id,
+      })
+    }
+  }
+
+  const getThreshold = (type: SeuilPersonnalise['type']) => {
+    if (!thresholdsList || !Array.isArray(thresholdsList)) return null
+    return thresholdsList.find(t => t.type === type) || null
   }
 
   if (isLoading) {
@@ -218,220 +235,101 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Statistiques de l'équipe</CardTitle>
-              <CardDescription>Vue d'ensemble de votre équipe</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-600">Joueurs actifs</p>
-                  <p className="text-2xl font-bold">--</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-600">Membres du staff</p>
-                  <p className="text-2xl font-bold">--</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-600">Séances ce mois</p>
-                  <p className="text-2xl font-bold">--</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-slate-600">Date de création</p>
-                  <p className="text-2xl font-bold">--</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Onglet Seuils */}
         <TabsContent value="thresholds" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Seuils personnalisés</CardTitle>
-              <CardDescription>
-                Configurez les seuils d'alerte pour votre équipe
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* RPE */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">RPE (Rating of Perceived Exertion)</h3>
-                  <Badge variant="outline">0-10</Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="rpe-warning">Seuil d'avertissement</Label>
-                    <Input
-                      id="rpe-warning"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={thresholds.rpe_warning}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, rpe_warning: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Alerte modérée si RPE ≥ ce seuil</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rpe-critique">Seuil critique</Label>
-                    <Input
-                      id="rpe-critique"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={thresholds.rpe_critique}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, rpe_critique: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Alerte critique si RPE ≥ ce seuil</p>
-                  </div>
-                </div>
-              </div>
+          {isLoadingThresholds ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <ThresholdCard
+                threshold={getThreshold('RCA_SURCHARGE')}
+                type="RCA_SURCHARGE"
+                label="RCA - Ratio de Charge Aiguë (Surcharge)"
+                description="Indicateur de surcharge d'entraînement basé sur le ratio entre la charge aiguë (7j) et chronique (28j)"
+                unit="Ratio"
+                defaultMax={1.5}
+                defaultCritical={1.8}
+                onSave={handleSaveThreshold}
+                onDelete={() => handleDeleteThreshold('RCA_SURCHARGE')}
+                isSaving={createThreshold.isPending || updateThreshold.isPending}
+                isDeleting={deleteThreshold.isPending}
+              />
 
-              <Separator />
+              <ThresholdCard
+                threshold={getThreshold('RCA_SOUS_CHARGE')}
+                type="RCA_SOUS_CHARGE"
+                label="RCA - Ratio de Charge Aiguë (Sous-charge)"
+                description="Indicateur de sous-charge d'entraînement - risque de déconditionnement"
+                unit="Ratio"
+                defaultMin={0.8}
+                defaultCritical={0.5}
+                onSave={handleSaveThreshold}
+                onDelete={() => handleDeleteThreshold('RCA_SOUS_CHARGE')}
+                isSaving={createThreshold.isPending || updateThreshold.isPending}
+                isDeleting={deleteThreshold.isPending}
+              />
 
-              {/* Charge d'entraînement */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Charge d'entraînement (UA)</h3>
-                  <Badge variant="outline">Unités arbitraires</Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="charge-warning">Seuil d'avertissement</Label>
-                    <Input
-                      id="charge-warning"
-                      type="number"
-                      min="0"
-                      value={thresholds.charge_warning}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, charge_warning: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Charge hebdomadaire modérée</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="charge-critique">Seuil critique</Label>
-                    <Input
-                      id="charge-critique"
-                      type="number"
-                      min="0"
-                      value={thresholds.charge_critique}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, charge_critique: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Charge hebdomadaire excessive</p>
-                  </div>
-                </div>
-              </div>
+              <ThresholdCard
+                threshold={getThreshold('MONOTONIE_IM')}
+                type="MONOTONIE_IM"
+                label="Indice de Monotonie (IM)"
+                description="Mesure de la variabilité de l'entraînement - une monotonie élevée augmente le risque de blessure"
+                unit="Index"
+                defaultMax={2.0}
+                defaultCritical={2.5}
+                onSave={handleSaveThreshold}
+                onDelete={() => handleDeleteThreshold('MONOTONIE_IM')}
+                isSaving={createThreshold.isPending || updateThreshold.isPending}
+                isDeleting={deleteThreshold.isPending}
+              />
 
-              <Separator />
+              <ThresholdCard
+                threshold={getThreshold('INDICE_CONTRAINTE_IC')}
+                type="INDICE_CONTRAINTE_IC"
+                label="Indice de Contrainte (IC)"
+                description="Produit de la charge totale et de la monotonie - indicateur global de stress"
+                unit="UA"
+                defaultMax={8000}
+                defaultCritical={10000}
+                onSave={handleSaveThreshold}
+                onDelete={() => handleDeleteThreshold('INDICE_CONTRAINTE_IC')}
+                isSaving={createThreshold.isPending || updateThreshold.isPending}
+                isDeleting={deleteThreshold.isPending}
+              />
 
-              {/* ACWR */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">ACWR (Acute:Chronic Workload Ratio)</h3>
-                  <Badge variant="outline">Ratio</Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="acwr-warning">Seuil d'avertissement</Label>
-                    <Input
-                      id="acwr-warning"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={thresholds.acwr_warning}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, acwr_warning: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Recommandé: 0.8 - 1.3</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="acwr-critique">Seuil critique</Label>
-                    <Input
-                      id="acwr-critique"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={thresholds.acwr_critique}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, acwr_critique: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Risque élevé si &gt; 1.5</p>
-                  </div>
-                </div>
-              </div>
+              <ThresholdCard
+                threshold={getThreshold('INDICE_FORME_BAS')}
+                type="INDICE_FORME_BAS"
+                label="Indice de Forme (Bas)"
+                description="Seuil bas de l'indice de forme quotidien - indicateur de fatigue ou maladie"
+                unit="0-10"
+                defaultMin={5}
+                defaultCritical={3}
+                onSave={handleSaveThreshold}
+                onDelete={() => handleDeleteThreshold('INDICE_FORME_BAS')}
+                isSaving={createThreshold.isPending || updateThreshold.isPending}
+                isDeleting={deleteThreshold.isPending}
+              />
 
-              <Separator />
-
-              {/* Monotonie */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Monotonie</h3>
-                  <Badge variant="outline">Index</Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="monotonie-warning">Seuil d'avertissement</Label>
-                    <Input
-                      id="monotonie-warning"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={thresholds.monotonie_warning}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, monotonie_warning: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Variabilité faible</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="monotonie-critique">Seuil critique</Label>
-                    <Input
-                      id="monotonie-critique"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      value={thresholds.monotonie_critique}
-                      onChange={(e) =>
-                        setThresholds({ ...thresholds, monotonie_critique: Number(e.target.value) })
-                      }
-                    />
-                    <p className="text-xs text-slate-500">Variabilité très faible - risque</p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="flex justify-end">
-                <Button onClick={handleSaveThresholds} disabled={updateThresholds.isPending}>
-                  {updateThresholds.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enregistrement...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Enregistrer les seuils
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              <ThresholdCard
+                threshold={getThreshold('INDICE_FORME_ELEVE')}
+                type="INDICE_FORME_ELEVE"
+                label="Indice de Forme (Élevé)"
+                description="Seuil haut de l'indice de forme - peut indiquer une sur-évaluation ou masquage de fatigue"
+                unit="0-10"
+                defaultMax={9}
+                defaultCritical={10}
+                onSave={handleSaveThreshold}
+                onDelete={() => handleDeleteThreshold('INDICE_FORME_ELEVE')}
+                isSaving={createThreshold.isPending || updateThreshold.isPending}
+                isDeleting={deleteThreshold.isPending}
+              />
+            </div>
+          )}
         </TabsContent>
 
         {/* Onglet Staff */}
@@ -548,7 +446,7 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="flex justify-end">
-                <Button onClick={handleSaveNotifications} disabled={false}>
+                <Button onClick={handleSaveNotifications}>
                   <Save className="mr-2 h-4 w-4" />
                   Enregistrer
                 </Button>

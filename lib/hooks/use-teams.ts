@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { teamService, TeamSettings, ThresholdSettings } from '@/lib/api/team.service'
+import { teamService, TeamSettings, SeuilPersonnalise } from '@/lib/api/team.service'
 import { toast } from 'sonner'
 
 export function useTeams() {
@@ -51,18 +51,50 @@ export function useTeamThresholds(equipeId: string | undefined) {
   })
 }
 
-export function useUpdateThresholds() {
+export function useCreateThreshold() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ equipeId, data }: { equipeId: string; data: ThresholdSettings }) =>
-      teamService.updateThresholds(equipeId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['team-thresholds', variables.equipeId] })
-      toast.success('Seuils personnalisés sauvegardés')
+    mutationFn: (data: Omit<SeuilPersonnalise, 'id' | 'date_creation' | 'date_modification'>) =>
+      teamService.createThreshold(data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['team-thresholds', data.equipe] })
+      toast.success('Seuil personnalisé créé')
     },
     onError: () => {
-      toast.error('Erreur lors de la sauvegarde des seuils')
+      toast.error('Erreur lors de la création du seuil')
+    },
+  })
+}
+
+export function useUpdateThreshold() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ seuilId, data }: { seuilId: string; data: Partial<SeuilPersonnalise> }) =>
+      teamService.updateThreshold(seuilId, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['team-thresholds', data.equipe] })
+      toast.success('Seuil personnalisé mis à jour')
+    },
+    onError: () => {
+      toast.error('Erreur lors de la mise à jour du seuil')
+    },
+  })
+}
+
+export function useDeleteThreshold() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ seuilId, equipeId }: { seuilId: string; equipeId: string }) =>
+      teamService.deleteThreshold(seuilId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['team-thresholds', variables.equipeId] })
+      toast.success('Seuil personnalisé supprimé')
+    },
+    onError: () => {
+      toast.error('Erreur lors de la suppression du seuil')
     },
   })
 }

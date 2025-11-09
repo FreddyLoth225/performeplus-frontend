@@ -30,15 +30,17 @@ export interface TeamSettings {
   parametres?: Record<string, any>
 }
 
-export interface ThresholdSettings {
-  rpe_critique?: number
-  rpe_warning?: number
-  charge_critique?: number
-  charge_warning?: number
-  acwr_critique?: number
-  acwr_warning?: number
-  monotonie_critique?: number
-  monotonie_warning?: number
+export interface SeuilPersonnalise {
+  id?: string
+  equipe: string
+  type: 'RCA_SURCHARGE' | 'RCA_SOUS_CHARGE' | 'MONOTONIE_IM' | 'INDICE_CONTRAINTE_IC' | 'INDICE_FORME_BAS' | 'INDICE_FORME_ELEVE'
+  valeur_min?: number | null
+  valeur_max?: number | null
+  valeur_critique?: number | null
+  actif: boolean
+  commentaire?: string
+  date_creation?: string
+  date_modification?: string
 }
 
 export const teamService = {
@@ -72,16 +74,39 @@ export const teamService = {
     return response.data
   },
 
-  async getThresholds(equipeId: string): Promise<ThresholdSettings> {
-    const response = await apiClient.get(`/seuils-personnalises/?equipe_id=${equipeId}`)
+  async getThresholds(equipeId: string): Promise<SeuilPersonnalise[]> {
+    const response = await apiClient.get(`/seuils/`, {
+      params: { equipe: equipeId }
+    })
+    // DRF peut retourner un objet paginé ou directement un tableau
+    const data = response.data
+    console.log('Thresholds response:', data)
+    
+    // Si c'est un objet paginé (avec results, count, etc.)
+    if (data && typeof data === 'object' && 'results' in data) {
+      return data.results
+    }
+    
+    // Si c'est directement un tableau
+    if (Array.isArray(data)) {
+      return data
+    }
+    
+    // Sinon retourner un tableau vide
+    return []
+  },
+
+  async createThreshold(data: Omit<SeuilPersonnalise, 'id' | 'date_creation' | 'date_modification'>): Promise<SeuilPersonnalise> {
+    const response = await apiClient.post('/seuils/', data)
     return response.data
   },
 
-  async updateThresholds(equipeId: string, data: ThresholdSettings): Promise<ThresholdSettings> {
-    const response = await apiClient.post('/seuils-personnalises/', {
-      equipe_id: equipeId,
-      ...data,
-    })
+  async updateThreshold(seuilId: string, data: Partial<SeuilPersonnalise>): Promise<SeuilPersonnalise> {
+    const response = await apiClient.patch(`/seuils/${seuilId}/`, data)
     return response.data
+  },
+
+  async deleteThreshold(seuilId: string): Promise<void> {
+    await apiClient.delete(`/seuils/${seuilId}/`)
   },
 }
