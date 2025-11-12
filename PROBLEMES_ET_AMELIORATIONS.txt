@@ -1,0 +1,583 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    PROBLÈMES & AMÉLIORATIONS NÉCESSAIRES
+                           PERFORMEPLUS FRONTEND
+═══════════════════════════════════════════════════════════════════════════════
+
+Date: 30 octobre 2025
+Niveau de gravité: 🔴 CRITIQUE | 🟠 IMPORTANT | 🟡 MOYEN | 🟢 MINEUR
+
+═══════════════════════════════════════════════════════════════════════════════
+1. PROBLÈMES DE SÉCURITÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+🔴 CRITIQUE - Stockage tokens dans localStorage
+──────────────────────────────────────────────────
+PROBLÈME:
+- Les tokens JWT (access + refresh) sont stockés dans localStorage
+- Vulnérable aux attaques XSS (Cross-Site Scripting)
+- Si un script malveillant est injecté, il peut voler les tokens
+
+SOLUTION:
+- Utiliser HttpOnly cookies pour le refresh token
+- Garder access token en mémoire (state React)
+- Endpoint /refresh qui retourne nouveau access token via cookie
+- Implémenter CSRF protection avec tokens
+
+FICHIERS CONCERNÉS:
+- lib/api/client.ts (intercepteurs)
+- lib/store/auth-store.ts (persistence)
+- lib/api/auth.service.ts
+
+🟠 IMPORTANT - Pas de validation expiration token côté client
+────────────────────────────────────────────────────────────────
+PROBLÈME:
+- Le client ne vérifie pas la date d'expiration du token
+- Dépend uniquement de la réponse 401 du serveur
+- Peut causer des requêtes inutiles
+
+SOLUTION:
+- Décoder JWT côté client pour vérifier expiration
+- Refresh préventif avant expiration
+- Utiliser jwt-decode library
+
+🟠 IMPORTANT - Pas de rate limiting côté client
+─────────────────────────────────────────────────
+PROBLÈME:
+- Pas de protection contre les requêtes répétées
+- Peut surcharger le serveur
+
+SOLUTION:
+- Implémenter debouncing sur formulaires
+- Throttling sur actions répétitives
+- Désactiver boutons pendant requêtes
+
+🟡 MOYEN - Variables d'environnement exposées
+───────────────────────────────────────────────
+PROBLÈME:
+- NEXT_PUBLIC_API_URL est visible dans le bundle client
+- Normal pour Next.js mais à documenter
+
+SOLUTION:
+- Documenter que c'est normal
+- Ne JAMAIS mettre de secrets dans NEXT_PUBLIC_*
+- Utiliser variables serveur pour secrets
+
+═══════════════════════════════════════════════════════════════════════════════
+2. PROBLÈMES D'ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+🔴 CRITIQUE - Pas de gestion d'erreur globale
+───────────────────────────────────────────────
+PROBLÈME:
+- Chaque composant gère ses erreurs individuellement
+- Pas de boundary error React
+- Crashes peuvent faire planter toute l'app
+- Pas de logging centralisé
+
+SOLUTION:
+- Implémenter Error Boundary React
+- Créer composant ErrorFallback
+- Intégrer Sentry ou similaire pour monitoring
+- Logger erreurs dans service centralisé
+
+FICHIERS À CRÉER:
+- components/error-boundary.tsx
+- lib/error-handler.ts
+
+🟠 IMPORTANT - Stores Zustand non typés strictement
+─────────────────────────────────────────────────────
+PROBLÈME:
+- Types Zustand peu stricts
+- Pas de validation runtime
+- Peut causer bugs subtils
+
+SOLUTION:
+- Renforcer typage avec generics
+- Ajouter validation Zod dans setters
+- Tests unitaires sur stores
+
+🟠 IMPORTANT - Pas de loading skeletons
+─────────────────────────────────────────
+PROBLÈME:
+- Loading states affichent juste "Chargement..."
+- Mauvaise UX, impression de lenteur
+- Pas de feedback visuel structuré
+
+SOLUTION:
+- Créer composants Skeleton
+- Utiliser dans tous les loading states
+- Préserver layout pendant chargement
+
+FICHIERS À CRÉER:
+- components/ui/skeleton.tsx
+- components/dashboard/dashboard-skeleton.tsx
+
+🟡 MOYEN - Duplication de logique entre hooks
+───────────────────────────────────────────────
+PROBLÈME:
+- use-wellness.ts contient logique similaire répétée
+- Mutations IF et RPE quasi identiques
+- Code non DRY
+
+SOLUTION:
+- Extraire factory function pour mutations
+- Créer hook générique useMutation
+- Réutiliser logique commune
+
+🟡 MOYEN - Pas de pagination
+──────────────────────────────
+PROBLÈME:
+- Toutes les listes chargent tout
+- Historique RPE/IF peut devenir énorme
+- Performance dégradée avec beaucoup de données
+
+SOLUTION:
+- Implémenter pagination backend
+- Infinite scroll ou pagination classique
+- Limiter requêtes initiales
+
+═══════════════════════════════════════════════════════════════════════════════
+3. PROBLÈMES UI/UX
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 IMPORTANT - Messages d'erreur peu clairs
+─────────────────────────────────────────────
+PROBLÈME:
+- Erreurs API affichées brutes: "error.response?.data?.detail"
+- Pas de traduction
+- Messages techniques pour utilisateurs
+
+SOLUTION:
+- Créer mapping erreurs API → messages clairs
+- Traductions FR complètes
+- Messages contextuels et actionnables
+
+FICHIERS À CRÉER:
+- lib/error-messages.ts
+
+🟠 IMPORTANT - Pas de confirmation avant actions critiques
+────────────────────────────────────────────────────────────
+PROBLÈME:
+- Déconnexion sans confirmation
+- Suppression sans confirmation (quand implémenté)
+- Peut causer pertes de données
+
+SOLUTION:
+- Dialog confirmation pour actions critiques
+- "Êtes-vous sûr ?" avant logout
+- Confirmation suppression données
+
+🟡 MOYEN - Formulaires non sauvegardés en local
+─────────────────────────────────────────────────
+PROBLÈME:
+- Si refresh page pendant saisie, données perdues
+- Pas de sauvegarde brouillon
+- Frustrant pour utilisateur
+
+SOLUTION:
+- Auto-save dans localStorage
+- Restaurer brouillon au retour
+- Message "Brouillon restauré"
+
+🟡 MOYEN - Pas de mode hors ligne
+───────────────────────────────────
+PROBLÈME:
+- App inutilisable sans connexion
+- Pas de PWA
+- Pas de cache offline
+
+SOLUTION:
+- Implémenter Service Worker
+- PWA avec offline mode
+- Synchronisation auto au retour en ligne
+- Cache données critiques
+
+🟢 MINEUR - Pas d'animations de transition
+────────────────────────────────────────────
+PROBLÈME:
+- Changements brusques
+- Pas fluide
+
+SOLUTION:
+- Framer Motion pour transitions
+- Animations loading
+- Transitions entre pages
+
+═══════════════════════════════════════════════════════════════════════════════
+4. PROBLÈMES DE PERFORMANCE
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 IMPORTANT - Pas d'optimisation images
+──────────────────────────────────────────
+PROBLÈME:
+- Logo équipes non optimisés
+- Photos profils non compressées
+- Pas de format WebP
+
+SOLUTION:
+- Utiliser next/image partout
+- Compression automatique
+- Format WebP avec fallback
+- Lazy loading images
+
+🟡 MOYEN - Re-renders inutiles
+───────────────────────────────
+PROBLÈME:
+- Composants re-render sans changement
+- Pas de React.memo sur composants lourds
+- Props non memoizées
+
+SOLUTION:
+- React.memo sur composants lourds
+- useMemo pour calculs coûteux
+- useCallback pour fonctions passées en props
+- React DevTools Profiler pour identifier
+
+FICHIERS CONCERNÉS:
+- components/player/indice-forme-chart.tsx
+- components/player/rpe-pending-list.tsx
+
+🟡 MOYEN - Bundle JavaScript trop gros
+────────────────────────────────────────
+PROBLÈME:
+- Toutes dépendances chargées d'un coup
+- FullCalendar importé même si pas utilisé
+- Recharts chargé partout
+
+SOLUTION:
+- Dynamic imports pour routes
+- Code splitting par feature
+- Tree shaking optimisé
+- Analyser bundle avec @next/bundle-analyzer
+
+🟢 MINEUR - Pas de prefetching
+────────────────────────────────
+PROBLÈME:
+- Navigation lente entre pages
+- Pas de prefetch données
+
+SOLUTION:
+- Prefetch links Next.js (déjà actif)
+- Prefetch données probables
+- React Query prefetch
+
+═══════════════════════════════════════════════════════════════════════════════
+5. PROBLÈMES DE TESTS
+═══════════════════════════════════════════════════════════════════════════════
+
+🔴 CRITIQUE - Aucun test
+─────────────────────────
+PROBLÈME:
+- Pas de tests unitaires
+- Pas de tests d'intégration
+- Pas de tests E2E
+- Régressions non détectées
+
+SOLUTION:
+- Vitest pour tests unitaires
+- React Testing Library
+- Playwright pour E2E
+- Coverage > 80%
+
+FICHIERS À CRÉER:
+- vitest.config.ts
+- __tests__/ directory structure
+- tests/ pour E2E
+
+PRIORITÉS TESTS:
+1. Auth flow (login, logout, refresh token)
+2. Formulaires (validation, soumission)
+3. API services (mocks)
+4. Hooks personnalisés
+5. Composants critiques (indice-forme, RPE)
+
+═══════════════════════════════════════════════════════════════════════════════
+6. PROBLÈMES DE DONNÉES
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 IMPORTANT - Pas de validation des types runtime
+────────────────────────────────────────────────────
+PROBLÈME:
+- Types TypeScript compilés en JavaScript
+- Pas de validation données API en runtime
+- Backend peut retourner format inattendu
+
+SOLUTION:
+- Zod schemas pour toutes réponses API
+- Validation dans intercepteurs Axios
+- Type guards TypeScript
+
+FICHIERS À CRÉER:
+- lib/validators/api-schemas.ts
+
+🟡 MOYEN - Cache React Query trop court
+─────────────────────────────────────────
+PROBLÈME:
+- Stale time 5min peut être court
+- Refetch trop fréquent pour données statiques
+
+SOLUTION:
+- Différencier stale time par type donnée:
+  • Profil user: 30min
+  • IF du jour: 2min
+  • Liste équipes: 1h
+  • Historiques: 10min
+
+🟡 MOYEN - Pas de synchronisation temps réel
+──────────────────────────────────────────────
+PROBLÈME:
+- Données pas mises à jour en temps réel
+- Staff ne voit pas nouvelles saisies joueurs immédiatement
+- Doit refresh manuellement
+
+SOLUTION:
+- WebSocket pour updates temps réel
+- Polling automatique pour données critiques
+- React Query refetch on focus
+
+═══════════════════════════════════════════════════════════════════════════════
+7. PROBLÈMES D'ACCESSIBILITÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+🟡 MOYEN - Navigation clavier incomplète
+──────────────────────────────────────────
+PROBLÈME:
+- Slider wellness difficile au clavier
+- Certains dialogs non tabbables correctement
+- Pas de shortcuts clavier
+
+SOLUTION:
+- Tester navigation complète au clavier
+- Ajouter tabIndex appropriés
+- Keyboard shortcuts (? pour aide)
+
+🟡 MOYEN - Contraste couleurs insuffisant
+───────────────────────────────────────────
+PROBLÈME:
+- Certains textes gris sur fond clair
+- Peut ne pas respecter WCAG AA
+
+SOLUTION:
+- Audit avec Lighthouse
+- Ajuster couleurs Tailwind
+- Tester avec simulateurs daltonisme
+
+🟢 MINEUR - Pas de support lecteurs d'écran
+─────────────────────────────────────────────
+PROBLÈME:
+- Certains composants manquent ARIA labels
+- Live regions non utilisées
+- Annonces changements dynamiques
+
+SOLUTION:
+- Ajouter ARIA labels partout
+- Live regions pour toasts
+- Alt text sur images
+- Screen reader testing
+
+═══════════════════════════════════════════════════════════════════════════════
+8. PROBLÈMES DE DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 IMPORTANT - Pas de documentation composants
+────────────────────────────────────────────────
+PROBLÈME:
+- Composants sans JSDoc
+- Props non documentées
+- Pas de Storybook
+
+SOLUTION:
+- JSDoc sur tous exports publics
+- Storybook pour catalogue composants
+- README par feature
+
+🟡 MOYEN - Pas de guide contribution
+──────────────────────────────────────
+PROBLÈME:
+- Nouveau dev ne sait pas comment contribuer
+- Pas de convention code
+- Pas de guide style
+
+SOLUTION:
+- CONTRIBUTING.md
+- Style guide (Prettier + ESLint)
+- Architecture decision records (ADR)
+
+═══════════════════════════════════════════════════════════════════════════════
+9. PROBLÈMES DE CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════════
+
+🟡 MOYEN - Configuration environnements incomplète
+────────────────────────────────────────────────────
+PROBLÈME:
+- Seule variable: NEXT_PUBLIC_API_URL
+- Pas de config dev/staging/prod
+- Pas de .env.example
+
+SOLUTION:
+- .env.example documenté
+- .env.development, .env.production
+- Validation variables au startup
+
+FICHIERS À CRÉER:
+- .env.example
+- lib/env.ts (validation Zod)
+
+🟢 MINEUR - Pas de Docker
+──────────────────────────
+PROBLÈME:
+- Setup manuel pour nouveaux devs
+- Pas reproductible
+- Pas de CI/CD
+
+SOLUTION:
+- Dockerfile
+- docker-compose.yml
+- GitHub Actions CI/CD
+
+═══════════════════════════════════════════════════════════════════════════════
+10. PROBLÈMES SPÉCIFIQUES PAR FONCTIONNALITÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 INDICE DE FORME
+───────────────────
+PROBLÈMES:
+- Pas de rappel si joueur oublie saisie
+- Pas de comparaison avec coéquipiers
+- Graphique peu lisible sur mobile
+- Pas d'export données
+
+SOLUTIONS:
+- Notifications push
+- Vue comparative équipe (staff)
+- Graphique responsive amélioré
+- Export CSV/PDF
+
+🟠 RPE
+───────
+PROBLÈMES:
+- Pas d'historique des modifications
+- Pas de deadline saisie (combien de temps après séance)
+- Calcul CEJ ne considère pas intensité zones cardio
+- Pas d'analyse charge aigu:chronique
+
+SOLUTIONS:
+- Audit trail modifications
+- Deadline configurable (24h, 48h)
+- Intégration GPS/Cardio data
+- Ratio ACWR (charge aigu/chronique)
+
+🟡 DASHBOARD
+─────────────
+PROBLÈMES:
+- Stats hardcodées à 0
+- Pas de vrais graphiques
+- Pas de filtres date
+- Pas d'export
+
+SOLUTIONS:
+- Connecter aux vraies données
+- Graphiques Recharts
+- Date range picker
+- Export PDF rapports
+
+🟡 SIDEBAR
+───────────
+PROBLÈMES:
+- Pas de collapse sur mobile
+- Prend trop de place
+- Pas d'indicateurs notifications
+- Pas de recherche
+
+SOLUTIONS:
+- Hamburger menu mobile
+- Version minimisée
+- Badges notifications
+- Search bar globale
+
+═══════════════════════════════════════════════════════════════════════════════
+11. REFACTORING NÉCESSAIRE
+═══════════════════════════════════════════════════════════════════════════════
+
+🟠 PRIORITY 1 - Réorganiser types
+───────────────────────────────────
+- Séparer types par domaine
+- lib/types/auth.ts
+- lib/types/team.ts
+- lib/types/wellness.ts
+- Pas tout dans index.ts
+
+🟠 PRIORITY 2 - Extraire constantes
+─────────────────────────────────────
+- Labels RPE/IF dans constants.ts
+- Routes dans routes.ts
+- Messages dans messages.ts
+- Pas de magic strings
+
+🟡 PRIORITY 3 - Créer composables
+───────────────────────────────────
+- Logique formulaire réutilisable
+- Composant FormField générique
+- Hook useForm personnalisé
+- Moins de duplication
+
+═══════════════════════════════════════════════════════════════════════════════
+12. RÉSUMÉ PRIORISÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+URGENT (À faire maintenant):
+1. 🔴 Implémenter Error Boundary
+2. 🔴 Ajouter tests unitaires critiques (auth, forms)
+3. 🔴 Sécuriser tokens (HttpOnly cookies)
+4. 🟠 Ajouter validation runtime données API
+5. 🟠 Créer loading skeletons
+
+COURT TERME (Prochaine sprint):
+6. 🟠 Messages erreur clairs
+7. 🟠 Confirmations actions critiques
+8. 🟠 Documentation composants
+9. 🟡 Optimiser re-renders
+10. 🟡 Implémenter pagination
+
+MOYEN TERME (Prochain mois):
+11. 🟡 Mode offline / PWA
+12. 🟡 Animations transitions
+13. 🟡 WebSocket temps réel
+14. 🟡 Analytics & monitoring
+15. 🟢 Storybook
+
+LONG TERME (Roadmap):
+16. Refactoring architecture
+17. Micro-frontends si croissance
+18. Internationalisation (i18n)
+19. Machine Learning intégration
+20. Mobile app (React Native)
+
+═══════════════════════════════════════════════════════════════════════════════
+13. MÉTRIQUES À SUIVRE
+═══════════════════════════════════════════════════════════════════════════════
+
+QUALITÉ CODE:
+- Test coverage > 80%
+- 0 erreurs ESLint
+- 0 warnings TypeScript
+- Lighthouse score > 90
+
+PERFORMANCE:
+- First Contentful Paint < 1.5s
+- Time to Interactive < 3s
+- Bundle size < 500kb
+- API calls < 3s
+
+SÉCURITÉ:
+- 0 vulnérabilités npm audit
+- OWASP Top 10 compliant
+- CSP headers configurés
+- HTTPS only
+
+═══════════════════════════════════════════════════════════════════════════════
+FIN DU RAPPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+Note: Ce document doit être mis à jour régulièrement au fur et à mesure 
+que les problèmes sont résolus et que de nouveaux sont identifiés.

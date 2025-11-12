@@ -1,0 +1,644 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    DOCUMENTATION COMPLÈTE - PERFORMEPLUS FRONTEND
+                              Application de Gestion Sportive
+═══════════════════════════════════════════════════════════════════════════════
+
+Date: 30 octobre 2025
+Version: 0.1.0
+Framework: Next.js 16.0.1 (App Router)
+Architecture: React 19.2.0 + TypeScript
+
+═══════════════════════════════════════════════════════════════════════════════
+1. PRÉSENTATION GÉNÉRALE
+═══════════════════════════════════════════════════════════════════════════════
+
+PerformePlus est une application web de gestion de performance sportive qui 
+permet aux équipes sportives de suivre et analyser les données de leurs joueurs.
+
+OBJECTIF PRINCIPAL:
+- Suivre l'état de forme des joueurs (wellness monitoring)
+- Gérer la charge d'entraînement via le système RPE (Rate of Perceived Exertion)
+- Analyser les performances et prévenir les blessures
+- Faciliter la communication entre staff technique et joueurs
+
+UTILISATEURS CIBLES:
+- Propriétaires d'équipe (OWNER)
+- Staff technique (STAFF)
+- Joueurs (PLAYER)
+
+═══════════════════════════════════════════════════════════════════════════════
+2. STACK TECHNIQUE
+═══════════════════════════════════════════════════════════════════════════════
+
+FRAMEWORK & RUNTIME:
+- Next.js 16.0.1 (App Router avec React Server Components)
+- React 19.2.0
+- TypeScript 5+
+- Node.js (runtime)
+
+GESTION D'ÉTAT:
+- Zustand 5.0.8 (state management global)
+  • auth-store.ts → Gestion authentification utilisateur
+  • team-store.ts → Gestion équipe active
+- TanStack Query 5.90.5 (React Query - cache & synchro serveur)
+
+UI & STYLING:
+- Tailwind CSS 4
+- Radix UI (composants accessibles headless)
+- shadcn/ui (système de composants)
+- Lucide React 0.548.0 (icônes)
+
+FORMULAIRES & VALIDATION:
+- React Hook Form 7.65.0
+- Zod 4.1.12 (validation schéma)
+- @hookform/resolvers 5.2.2
+
+DATA VISUALIZATION:
+- Recharts 3.3.0 (graphiques)
+- FullCalendar 6.1.19 (calendrier séances)
+
+UTILITAIRES:
+- Axios 1.13.1 (requêtes HTTP)
+- date-fns 4.1.0 (gestion dates)
+- sonner 2.0.7 (notifications toast)
+- clsx + tailwind-merge (gestion classes CSS conditionnelles)
+
+═══════════════════════════════════════════════════════════════════════════════
+3. ARCHITECTURE DE L'APPLICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+3.1 STRUCTURE DES DOSSIERS
+─────────────────────────────
+
+performeplus-frontend/
+├── app/                          # App Router Next.js
+│   ├── (auth)/                  # Groupe de routes authentification
+│   │   ├── login/               # Page connexion
+│   │   ├── register/            # Page inscription
+│   │   └── layout.tsx           # Layout pages auth
+│   ├── (dashboard)/             # Groupe de routes dashboard
+│   │   ├── dashboard/
+│   │   │   ├── page.tsx        # Redirection selon rôle
+│   │   │   ├── player/         # Dashboard joueur
+│   │   │   ├── staff/          # Dashboard staff
+│   │   │   ├── owner/          # Dashboard propriétaire
+│   │   │   └── my-data/        # Mes données (joueur)
+│   │   └── layout.tsx          # Layout avec sidebar
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Page d'accueil
+│   ├── providers.tsx           # Providers React Query
+│   └── globals.css             # Styles globaux
+│
+├── components/
+│   ├── auth/                   # Composants authentification
+│   │   ├── auth-guard.tsx     # Protection routes
+│   │   ├── login-form.tsx     # Formulaire connexion
+│   │   ├── register-form.tsx  # Formulaire inscription
+│   │   └── user-loader.tsx    # Chargement user au démarrage
+│   ├── layout/
+│   │   └── sidebar.tsx        # Barre latérale navigation
+│   ├── player/                # Composants spécifiques joueur
+│   │   ├── indice-forme-form.tsx       # Saisie indice de forme
+│   │   ├── indice-forme-chart.tsx      # Graphique historique
+│   │   ├── indice-forme-details.tsx    # Détails score
+│   │   ├── rpe-form.tsx               # Saisie RPE
+│   │   └── rpe-pending-list.tsx       # Liste RPE en attente
+│   └── ui/                    # Composants UI réutilisables
+│       └── [...] (shadcn/ui components)
+│
+├── lib/
+│   ├── api/                   # Services API
+│   │   ├── client.ts          # Client Axios configuré
+│   │   ├── auth.service.ts    # API authentification
+│   │   ├── team.service.ts    # API équipes
+│   │   ├── wellness.service.ts # API wellness (IF + RPE)
+│   │   ├── session.service.ts # API séances
+│   │   └── query-client.ts    # Configuration React Query
+│   ├── hooks/                 # Custom React Hooks
+│   │   ├── use-auth.ts       # Hook authentification
+│   │   ├── use-teams.ts      # Hook gestion équipes
+│   │   └── use-wellness.ts   # Hook wellness (IF + RPE)
+│   ├── store/                 # Zustand stores
+│   │   ├── auth-store.ts     # Store authentification
+│   │   └── team-store.ts     # Store équipe active
+│   ├── types/
+│   │   └── index.ts          # Types TypeScript
+│   ├── validators/
+│   │   └── auth.schemas.ts   # Schémas validation Zod
+│   └── utils.ts              # Fonctions utilitaires
+│
+├── middleware.ts              # Next.js middleware (routes publiques)
+└── [fichiers de config]       # next.config, tailwind.config, etc.
+
+3.2 FLUX DE DONNÉES
+────────────────────
+
+                   ┌─────────────────┐
+                   │   USER ACTION   │
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │   REACT HOOK    │ (use-auth, use-wellness, etc.)
+                   │   + React Query │
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │  API SERVICE    │ (auth.service, wellness.service)
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │  AXIOS CLIENT   │ (avec intercepteurs JWT)
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │   BACKEND API   │ (Django REST)
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │  REACT QUERY    │ (cache + invalidation)
+                   └────────┬────────┘
+                            │
+                   ┌────────▼────────┐
+                   │   UI UPDATE     │
+                   └─────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+4. FONCTIONNALITÉS DÉTAILLÉES
+═══════════════════════════════════════════════════════════════════════════════
+
+4.1 AUTHENTIFICATION & AUTORISATION
+─────────────────────────────────────
+
+INSCRIPTION (register/page.tsx):
+✓ Formulaire validation email, mot de passe, nom, prénoms
+✓ Validation Zod (min 8 caractères, email valide)
+✓ Gestion erreurs backend
+✓ Redirection vers login après succès
+
+CONNEXION (login/page.tsx):
+✓ Formulaire email + mot de passe
+✓ Toggle affichage mot de passe
+✓ Récupération JWT tokens (access + refresh)
+✓ Stockage localStorage
+✓ Récupération profil utilisateur
+✓ Chargement équipes utilisateur
+✓ Redirection selon rôle
+
+GESTION TOKENS JWT:
+✓ Access token dans headers Authorization
+✓ Refresh token automatique via intercepteur Axios
+✓ Redirection login si refresh échoue
+✓ Stockage sécurisé localStorage
+
+PROTECTION ROUTES:
+✓ AuthGuard component
+✓ Vérification token côté client
+✓ Middleware Next.js (routes publiques vs protégées)
+✓ Redirection automatique
+
+USER LOADER:
+✓ Chargement profil utilisateur au démarrage
+✓ Chargement équipes/memberships
+✓ Mise à jour stores Zustand
+✓ Vérification validité session
+
+4.2 GESTION DES ÉQUIPES
+─────────────────────────
+
+SÉLECTION ÉQUIPE ACTIVE:
+✓ Store Zustand pour équipe courante
+✓ Sélecteur dans sidebar
+✓ Persistence entre sessions
+✓ Changement équipe → refresh données
+
+MEMBERSHIPS:
+✓ Un utilisateur peut appartenir à plusieurs équipes
+✓ Rôles: OWNER, STAFF, PLAYER
+✓ Permissions par rôle
+✓ Affichage conditionnel UI selon rôle
+
+4.3 INDICE DE FORME (WELLNESS MONITORING)
+───────────────────────────────────────────
+
+COMPOSANT: indice-forme-form.tsx
+
+SAISIE QUOTIDIENNE:
+✓ 4 paramètres évalués (échelle 1-7):
+  - Sommeil (qualité)
+  - Fatigue (niveau d'énergie)
+  - Courbatures (douleurs musculaires)
+  - Stress (état psychologique)
+
+✓ Slider personnalisé avec 3 labels visuels
+✓ Calcul score total automatique (/28)
+✓ Interprétation score:
+  - 0-11: Très mauvais
+  - 12-14: Mauvais
+  - 15-20: Moyen
+  - 21-24: Bon
+  - 25-28: Excellent
+
+✓ Code couleur (rouge/orange/vert)
+✓ Une saisie par jour
+✓ Modification possible le jour même
+✓ Historique 7 derniers jours
+
+API CALLS:
+- GET /indice-forme/ → Récupérer indice du jour
+- POST /indice-forme/ → Créer nouvelle saisie
+- PATCH /indice-forme/{id}/ → Modifier saisie existante
+- GET /indice-forme/?historique=7 → Historique
+
+COMPOSANT: indice-forme-chart.tsx
+✓ Graphique historique Recharts
+✓ Visualisation tendance sur 7 jours
+✓ Détection dégradation forme
+
+COMPOSANT: indice-forme-details.tsx
+✓ Détail des 4 paramètres
+✓ Comparaison avec moyenne
+✓ Recommandations automatiques
+
+4.4 RPE - RATE OF PERCEIVED EXERTION
+──────────────────────────────────────
+
+COMPOSANT: rpe-form.tsx
+
+SAISIE APRÈS SÉANCE:
+✓ Paramètres:
+  - Durée réelle de participation (minutes)
+  - Valeur RPE (échelle 0-10, par pas de 0.5)
+  - Commentaire optionnel (ressenti, douleurs)
+
+✓ Échelle RPE expliquée:
+  - 0-2: Très très léger
+  - 3-4: Léger
+  - 5-6: Modéré
+  - 7-8: Difficile
+  - 9-10: Maximal
+
+✓ Calcul automatique charge (CEJ):
+  CEJ = Durée × RPE
+  Exemple: 60 min × 7 RPE = 420 UA (Unités Arbitraires)
+
+✓ Affichage charge calculée en temps réel
+✓ Validation formulaire
+
+COMPOSANT: rpe-pending-list.tsx
+✓ Liste séances en attente de saisie RPE
+✓ Badge nombre séances en attente
+✓ Informations séance (date, heure, type, lieu)
+✓ Dialog saisie RPE
+✓ Mise à jour automatique après saisie
+
+API CALLS:
+- GET /rpe/ → Séances en attente
+- POST /rpe/ → Créer saisie RPE
+- PATCH /rpe/{id}/ → Modifier RPE
+- GET /rpe/?historique=true → Historique RPE
+
+4.5 DASHBOARDS PAR RÔLE
+─────────────────────────
+
+PLAYER DASHBOARD (dashboard/player/page.tsx):
+✓ Carte Indice de Forme du jour
+✓ Statistiques 7 derniers jours:
+  - Nombre de séances
+  - Charge totale (UA)
+  - RPE en attente
+✓ Actions rapides:
+  - Saisir indice de forme
+  - Saisir RPE (si séances en attente)
+  - Consulter statistiques
+✓ Prochaine séance planifiée
+✓ Navigation vers "Mes données"
+
+STAFF DASHBOARD (dashboard/staff/page.tsx):
+✓ Vue d'ensemble équipe:
+  - Nombre joueurs actifs
+  - Séances de la semaine
+  - Alertes actives
+  - Charge moyenne équipe
+✓ Liste alertes (joueurs faible forme)
+✓ Actions rapides:
+  - Créer nouvelle séance
+  - Consulter calendrier
+  - Voir rapports
+✓ Accès gestion joueurs
+
+OWNER DASHBOARD (dashboard/owner/page.tsx):
+✓ Statistiques globales:
+  - Nombre joueurs et staff
+  - Séances planifiées
+  - Alertes système
+  - Charge totale équipe
+  - Statut abonnement
+✓ Gestion complète:
+  - Paramètres équipe
+  - Gestion membres
+  - Paramètres abonnement
+  - Configuration alertes
+✓ Vue calendrier complet
+✓ Rapports et analyses
+
+MY DATA PAGE (dashboard/my-data/page.tsx):
+✓ Page dédiée joueur
+✓ Formulaire indice de forme
+✓ Graphique historique
+✓ Liste RPE en attente
+✓ Historique saisies
+
+4.6 SIDEBAR NAVIGATION
+────────────────────────
+
+COMPOSANT: sidebar.tsx
+
+FONCTIONNALITÉS:
+✓ Logo équipe + nom
+✓ Sélecteur équipe (si plusieurs memberships)
+✓ Menu navigation adapté au rôle:
+  - Player: Dashboard, Mes données
+  - Staff: Dashboard, Joueurs, Séances, Rapports
+  - Owner: Tout + Paramètres équipe
+✓ Profil utilisateur en bas
+✓ Bouton déconnexion
+✓ Indicateurs notifications
+✓ Mode responsive (collapse mobile)
+
+4.7 COMPOSANTS UI RÉUTILISABLES
+─────────────────────────────────
+
+SLIDER-WELLNESS (slider-wellness.tsx):
+✓ Slider personnalisé pour wellness
+✓ 3 labels visuels (mauvais/moyen/excellent)
+✓ Valeur numérique affichée
+✓ Couleurs adaptatives
+✓ Disabled state
+
+CARDS, BUTTONS, INPUTS, etc.:
+✓ Composants shadcn/ui
+✓ Variants personnalisables
+✓ Accessibilité WCAG
+✓ Thème cohérent
+
+═══════════════════════════════════════════════════════════════════════════════
+5. GESTION D'ÉTAT & CACHE
+═══════════════════════════════════════════════════════════════════════════════
+
+5.1 ZUSTAND STORES
+───────────────────
+
+AUTH STORE (auth-store.ts):
+{
+  user: Utilisateur | null,
+  isAuthenticated: boolean,
+  setUser: (user) => void,
+  logout: () => void
+}
+→ Persisted dans localStorage
+→ Synchronisé avec API
+
+TEAM STORE (team-store.ts):
+{
+  currentTeam: Equipe | null,
+  currentMembership: MembreEquipe | null,
+  teams: Equipe[],
+  memberships: MembreEquipe[],
+  setCurrentTeam: (team) => void,
+  loadTeams: () => void
+}
+→ Gère équipe active
+→ Liste toutes les équipes utilisateur
+
+5.2 REACT QUERY CACHE
+──────────────────────
+
+CONFIGURATION (query-client.ts):
+- Stale time: 5 minutes
+- Cache time: 10 minutes
+- Retry: 1 fois
+- Refetch on window focus
+
+QUERIES KEYS:
+- ['user'] → Profil utilisateur
+- ['teams'] → Liste équipes
+- ['indice-forme', equipeId, 'today'] → Indice du jour
+- ['indice-forme', equipeId, 'history'] → Historique IF
+- ['rpe-pending', equipeId] → RPE en attente
+- ['rpe-history', equipeId] → Historique RPE
+- ['dashboard-player', equipeId] → Stats dashboard
+
+INVALIDATION:
+- Après création IF → invalidate IF queries
+- Après saisie RPE → invalidate RPE + dashboard
+- Après changement équipe → invalidate all équipe-related
+
+═══════════════════════════════════════════════════════════════════════════════
+6. API BACKEND - ENDPOINTS UTILISÉS
+═══════════════════════════════════════════════════════════════════════════════
+
+BASE URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+
+6.1 AUTHENTIFICATION
+─────────────────────
+POST   /token/                    → Login (obtenir JWT)
+POST   /token/refresh/            → Refresh access token
+POST   /register/                 → Inscription
+GET    /verify-email/{token}/     → Vérification email
+POST   /password-reset/request/   → Demande reset password
+POST   /password-reset/confirm/   → Confirmation reset
+GET    /profil/                   → Profil utilisateur actuel
+
+6.2 ÉQUIPES
+────────────
+GET    /equipes/                  → Liste équipes utilisateur
+GET    /equipes/{id}/             → Détail équipe
+POST   /equipes/                  → Créer équipe (owner)
+PATCH  /equipes/{id}/             → Modifier équipe
+GET    /equipes/{id}/membres/     → Membres équipe
+
+6.3 WELLNESS
+─────────────
+GET    /indice-forme/             → IF du jour (+ historique si param)
+POST   /indice-forme/             → Créer IF
+PATCH  /indice-forme/{id}/        → Modifier IF
+GET    /rpe/                      → RPE en attente
+POST   /rpe/                      → Créer RPE
+PATCH  /rpe/{id}/                 → Modifier RPE
+
+6.4 SÉANCES
+────────────
+GET    /seances/                  → Liste séances équipe
+POST   /seances/                  → Créer séance (staff/owner)
+PATCH  /seances/{id}/             → Modifier séance
+DELETE /seances/{id}/             → Supprimer séance
+GET    /seances/{id}/participations/ → Participations séance
+
+═══════════════════════════════════════════════════════════════════════════════
+7. SÉCURITÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+7.1 AUTHENTIFICATION
+─────────────────────
+✓ JWT tokens (access + refresh)
+✓ Access token: courte durée (15min typiquement)
+✓ Refresh token: longue durée (7 jours)
+✓ Refresh automatique via intercepteur
+✓ HttpOnly cookies pour refresh (à implémenter)
+
+7.2 PROTECTION DONNÉES
+───────────────────────
+✓ Tokens stockés localStorage (côté client)
+✓ Pas de données sensibles dans stores
+✓ Validation côté client ET serveur
+✓ Sanitization inputs
+
+7.3 AUTORISATION
+─────────────────
+✓ Vérification rôle côté client (UI)
+✓ Vérification permissions côté serveur
+✓ Routes protégées par AuthGuard
+✓ Middleware Next.js
+
+7.4 PROTECTION CSRF
+────────────────────
+✓ withCredentials: true sur axios
+✓ Cookies httpOnly (backend)
+✓ Headers personnalisés
+
+═══════════════════════════════════════════════════════════════════════════════
+8. RESPONSIVE & ACCESSIBILITÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+RESPONSIVE DESIGN:
+✓ Mobile-first approach
+✓ Breakpoints Tailwind (sm, md, lg, xl)
+✓ Sidebar collapsible mobile
+✓ Grids adaptatives
+✓ Touch-friendly (boutons min 44px)
+
+ACCESSIBILITÉ:
+✓ Composants Radix UI (accessibles par défaut)
+✓ Labels sur tous inputs
+✓ Focus visible
+✓ Navigation clavier
+✓ ARIA labels
+✓ Contraste couleurs WCAG AA
+
+═══════════════════════════════════════════════════════════════════════════════
+9. PERFORMANCES
+═══════════════════════════════════════════════════════════════════════════════
+
+OPTIMISATIONS:
+✓ React Server Components (Next.js)
+✓ Code splitting automatique
+✓ Lazy loading composants
+✓ React Query cache
+✓ Debouncing recherches
+✓ Memoization calculs lourds
+✓ Image optimization Next.js
+
+MONITORING:
+- Pas encore implémenté (prévoir Sentry ou similar)
+
+═══════════════════════════════════════════════════════════════════════════════
+10. ENVIRONNEMENT & CONFIGURATION
+═══════════════════════════════════════════════════════════════════════════════
+
+VARIABLES D'ENVIRONNEMENT:
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+
+SCRIPTS NPM:
+- npm run dev       → Démarrage développement (port 3000)
+- npm run build     → Build production
+- npm run start     → Démarrage production
+- npm run lint      → ESLint
+
+CONFIGURATION:
+- next.config.ts    → Configuration Next.js
+- tailwind.config.ts → Configuration Tailwind
+- tsconfig.json     → Configuration TypeScript
+- eslint.config.mjs → Règles ESLint
+
+═══════════════════════════════════════════════════════════════════════════════
+11. FLUX UTILISATEUR COMPLET
+═══════════════════════════════════════════════════════════════════════════════
+
+PREMIER USAGE - JOUEUR:
+1. Inscription → /register
+2. Validation email (si implémenté)
+3. Connexion → /login
+4. Redirection → /dashboard/player
+5. Visualisation dashboard
+6. Navigation → /dashboard/my-data
+7. Saisie indice de forme du jour
+8. Consultation séances en attente
+9. Saisie RPE pour chaque séance
+10. Visualisation historique et graphiques
+
+USAGE QUOTIDIEN - JOUEUR:
+1. Connexion automatique (token valide)
+2. Dashboard → Vérifier indice forme du jour
+3. Saisir indice si pas fait
+4. Vérifier RPE en attente
+5. Saisir RPE si séances effectuées
+6. Consulter statistiques
+7. Déconnexion
+
+USAGE STAFF:
+1. Connexion
+2. Dashboard staff → Vue d'ensemble équipe
+3. Vérifier alertes (joueurs faible forme)
+4. Créer nouvelle séance
+5. Consulter participations
+6. Analyser charges individuelles
+7. Exporter rapports (à implémenter)
+
+USAGE OWNER:
+1. Accès complet staff +
+2. Gestion membres équipe
+3. Paramètres équipe
+4. Gestion abonnement
+5. Configuration alertes
+6. Statistiques globales
+
+═══════════════════════════════════════════════════════════════════════════════
+12. INTÉGRATION FUTURE / ROADMAP
+═══════════════════════════════════════════════════════════════════════════════
+
+FONCTIONNALITÉS À DÉVELOPPER:
+- Calendrier complet FullCalendar
+- Export PDF rapports
+- Notifications push
+- Chat équipe
+- Gestion blessures
+- Tests physiques
+- Planification saison
+- Matchs et compositions
+- Statistiques avancées
+- Machine Learning prédictions blessures
+
+═══════════════════════════════════════════════════════════════════════════════
+13. DÉPENDANCES CRITIQUES
+═══════════════════════════════════════════════════════════════════════════════
+
+PRODUCTION:
+- next, react, react-dom → Core framework
+- @tanstack/react-query → Data fetching & cache
+- axios → HTTP client
+- zustand → State management
+- zod → Validation
+- react-hook-form → Forms
+- date-fns → Dates
+- @radix-ui/* → UI primitives
+- recharts → Charts
+- sonner → Toasts
+
+DEV:
+- typescript → Type safety
+- tailwindcss → Styling
+- eslint → Linting
+
+═══════════════════════════════════════════════════════════════════════════════
+FIN DE LA DOCUMENTATION FONCTIONNELLE
+═══════════════════════════════════════════════════════════════════════════════
