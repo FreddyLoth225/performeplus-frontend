@@ -1,0 +1,20 @@
+{
+  "/(auth)/forgot-password/page": "app/(auth)/forgot-password/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(auth)/register/page": "app/(auth)/register/page.js",
+  "/(dashboard)/dashboard/alerts/page": "app/(dashboard)/dashboard/alerts/page.js",
+  "/(dashboard)/dashboard/calendar/page": "app/(dashboard)/dashboard/calendar/page.js",
+  "/(dashboard)/dashboard/my-data/page": "app/(dashboard)/dashboard/my-data/page.js",
+  "/(dashboard)/dashboard/owner/page": "app/(dashboard)/dashboard/owner/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/dashboard/player/page": "app/(dashboard)/dashboard/player/page.js",
+  "/(dashboard)/dashboard/players/page": "app/(dashboard)/dashboard/players/page.js",
+  "/(dashboard)/dashboard/profile/page": "app/(dashboard)/dashboard/profile/page.js",
+  "/(dashboard)/dashboard/sessions/page": "app/(dashboard)/dashboard/sessions/page.js",
+  "/(dashboard)/dashboard/settings/page": "app/(dashboard)/dashboard/settings/page.js",
+  "/(dashboard)/dashboard/staff/page": "app/(dashboard)/dashboard/staff/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
+}

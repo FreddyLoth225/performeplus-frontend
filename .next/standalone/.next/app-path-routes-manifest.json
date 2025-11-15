@@ -1,0 +1,20 @@
+{
+  "/(auth)/forgot-password/page": "/forgot-password",
+  "/(auth)/login/page": "/login",
+  "/(auth)/register/page": "/register",
+  "/(dashboard)/dashboard/alerts/page": "/dashboard/alerts",
+  "/(dashboard)/dashboard/calendar/page": "/dashboard/calendar",
+  "/(dashboard)/dashboard/my-data/page": "/dashboard/my-data",
+  "/(dashboard)/dashboard/owner/page": "/dashboard/owner",
+  "/(dashboard)/dashboard/page": "/dashboard",
+  "/(dashboard)/dashboard/player/page": "/dashboard/player",
+  "/(dashboard)/dashboard/players/page": "/dashboard/players",
+  "/(dashboard)/dashboard/profile/page": "/dashboard/profile",
+  "/(dashboard)/dashboard/sessions/page": "/dashboard/sessions",
+  "/(dashboard)/dashboard/settings/page": "/dashboard/settings",
+  "/(dashboard)/dashboard/staff/page": "/dashboard/staff",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/"
+}

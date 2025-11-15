@@ -1,0 +1,15 @@
+{
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(dashboard)/dashboard/alerts/page": "app/(dashboard)/dashboard/alerts/page.js",
+  "/(dashboard)/dashboard/calendar/page": "app/(dashboard)/dashboard/calendar/page.js",
+  "/(dashboard)/dashboard/my-data/page": "app/(dashboard)/dashboard/my-data/page.js",
+  "/(dashboard)/dashboard/owner/page": "app/(dashboard)/dashboard/owner/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/dashboard/player/page": "app/(dashboard)/dashboard/player/page.js",
+  "/(dashboard)/dashboard/players/page": "app/(dashboard)/dashboard/players/page.js",
+  "/(dashboard)/dashboard/profile/page": "app/(dashboard)/dashboard/profile/page.js",
+  "/(dashboard)/dashboard/reports/page": "app/(dashboard)/dashboard/reports/page.js",
+  "/(dashboard)/dashboard/sessions/page": "app/(dashboard)/dashboard/sessions/page.js",
+  "/(dashboard)/dashboard/settings/page": "app/(dashboard)/dashboard/settings/page.js",
+  "/_not-found/page": "app/_not-found/page.js"
+}
