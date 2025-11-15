@@ -24,7 +24,7 @@ export interface AuthResponse {
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     console.log('🔐 Tentative de connexion...', credentials.email)
-    const response = await apiClient.post('/token/', credentials)
+    const response = await apiClient.post('/login/', credentials)
     console.log('✅ Réponse serveur:', response.data)
     return response.data
   },
